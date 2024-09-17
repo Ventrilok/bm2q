@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import constant from '../utils/constant';
-import questions from '../data/questions2.json';
+import questions from '../data/questions.json';
 import answers from '../data/answers.json';
 import congrats from '../data/congrats.json';
 
