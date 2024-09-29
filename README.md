@@ -25,8 +25,8 @@ BM2Q is a personal version of **Cards Against Humanity**, developed during the C
 - Developed to connect friends remotely during the COVID lockdown.
 
 ## Technologies Used
-- **Node.js** (version <= 20)
-- **React**
+- **Node.js** (version <= 21)
+- **Next JS**
 - **boardgame.io**
 - **Koa** (for serving static files)
 
