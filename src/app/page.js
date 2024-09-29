@@ -22,7 +22,6 @@ const BM2QClient = Client({
 const App = () => (
   <>
     <BM2QClient playerID="0" />
-    <BM2QClient playerID="1" />
   </>
 );
 
