@@ -8,15 +8,16 @@ export const Leaderboard = ({ players, playerNames, pick }) => {
       {playerName.map((player, index) => (
         <div
           className={clsx(
-            "flex w-24 flex-col items-center rounded bg-white p-2 shadow-lg sm:w-32",
-            players[index].ready && !players[index].hasVoted && "bg-secondary",
+            "flex w-24 flex-col items-center rounded p-2 shadow-lg sm:w-32",
+            players[index].ready && "bg-secondary",
+            !players[index].ready && "bg-white",
           )}
           key={player.name + index}
         >
-          <p class="text-xs font-bold sm:text-sm md:text-base">
+          <p className="text-xs font-bold sm:text-sm md:text-base">
             {playerName[index].name}
           </p>
-          <p class="text-xs sm:text-sm">Score: {players[index].score}</p>
+          <p className="text-xs sm:text-sm">Score: {players[index].score}</p>
         </div>
       ))}
     </>
