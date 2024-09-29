@@ -1,26 +1,24 @@
-import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSkull } from '@fortawesome/free-solid-svg-icons';
+import React from "react";
+import clsx from "clsx";
 
 export const Leaderboard = ({ players, playerNames, pick }) => {
   const playerName = players;
   return (
-    <ul className="divide-y divide-gray-100">
+    <>
       {playerName.map((player, index) => (
-        <article key={player.name + index} className="p-4 flex space-x-4">
-          <div className="flex justify-between items-center w-full">
-            <div className="avatar placeholder">
-              <div className="bg-neutral-focus text-neutral-content rounded-full w-10 h-10">
-                <FontAwesomeIcon icon={faSkull} color={players[index].ready && !players[index].hasVoted ? '#C9BB3C' : '#ffffff'} size="lg" />
-              </div>
-            </div>
-            <div className="text-neutral text-xl">{playerName[index].name}</div>
-            <div className="avatar placeholder">
-              <div className="bg-neutral-focus text-neutral-content rounded-full w-10 h-10">{players[index].score}</div>
-            </div>
-          </div>
-        </article>
+        <div
+          className={clsx(
+            "flex w-24 flex-col items-center rounded bg-white p-2 shadow-lg sm:w-32",
+            players[index].ready && !players[index].hasVoted && "bg-secondary",
+          )}
+          key={player.name + index}
+        >
+          <p class="text-xs font-bold sm:text-sm md:text-base">
+            {playerName[index].name}
+          </p>
+          <p class="text-xs sm:text-sm">Score: {players[index].score}</p>
+        </div>
       ))}
-    </ul>
+    </>
   );
 };
