@@ -1,6 +1,6 @@
-import constant from '../../utils/constant';
+import constant from "../../utils/constant";
 
-export const changeHand = (G, ctx, playerID) => {
+export const changeHand = ({ G, ctx }, playerID) => {
   G.players[playerID].hasChangedCard = true;
 
   G.players[playerID].changeQuota -= 1;

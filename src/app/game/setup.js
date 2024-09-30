@@ -1,8 +1,8 @@
-import { nanoid } from 'nanoid';
-import constant from '../utils/constant';
-import questions from '../data/questions.json';
-import answers from '../data/answers.json';
-import congrats from '../data/congrats.json';
+import { nanoid } from "nanoid";
+import constant from "../utils/constant";
+import questions from "../data/questions.json";
+import answers from "../data/answers.json";
+import congrats from "../data/congrats.json";
 
 const createPlayer = (idx) => ({
   id: idx,
@@ -25,13 +25,14 @@ function createPlayers(num) {
   return players;
 }
 
-export function setup({ctx,random}) {
+export function setup({ ctx, random }) {
   const Game = {
     firstAt: ctx.numPlayers >= 4 ? ctx.numPlayers * 4 : 15,
     nbRound: 0,
     seed: nanoid(random.Die(40)),
     randomizedPlayersOrder: [],
-    currentQuestion: '',
+    currentQuestion: "",
+    matchdata: ctx.matchData,
     players: createPlayers(ctx.numPlayers),
     questionDeck: random.Shuffle(questions),
     answerDeck: random.Shuffle(

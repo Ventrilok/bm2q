@@ -1,21 +1,30 @@
-import React from 'react';
-import classnames from 'classnames';
-import reactStringReplace from 'react-string-replace';
+import React from "react";
+import reactStringReplace from "react-string-replace";
+import clsx from "clsx";
 
-export const GameCard = ({ cardType, questionText, answerText, by, active, selectedPosition, hasVoted, onCardClick }) => {
+export const GameCard = ({
+  cardType,
+  questionText,
+  answerText,
+  by,
+  active,
+  selectedPosition,
+  hasVoted,
+  onCardClick,
+}) => {
   function getCardText(cardType) {
     switch (cardType) {
-      case 'questionCard':
+      case "questionCard":
         return questionText;
 
-      case 'answerCard':
+      case "answerCard":
         return answerText;
 
-      case 'voteCard':
+      case "voteCard":
         let cnt = 0;
         let final = questionText.replace(/______/g, function ($0) {
           if (cnt === answerText.length) cnt = 0;
-          return '#' + answerText[cnt++].text + '#';
+          return "#" + answerText[cnt++].text + "#";
         });
 
         return reactStringReplace(final, /#(.*?)\#/gm, (match, i) => (
@@ -24,33 +33,51 @@ export const GameCard = ({ cardType, questionText, answerText, by, active, selec
           </span>
         ));
       default:
-        return 'error';
+        return "error";
     }
   }
 
-  let cardStyle = classnames('card text-center p-2 shadow-lg', {
-    'bg-neutral text-accent-content shadow-2xl font-medium tracking-wide text-2xl': cardType === 'questionCard' ? true : false,
-    'bg-white text-neutral border-gray-200 border h-60 w-60 text-lg hover:bg-secondary-focus hover:text-white': cardType === 'answerCard' ? true : false,
-    'bg-neutral': cardType === 'voteCard' ? true : false,
-    'bg-secondary-focus text-white': active,
-  });
+  const cardBkgd = clsx(
+    "card shadow-lg  w-36 sm:w-56 h-64 sm:h-80 flex flex-col items-center justify-start shadow-xl",
+    cardType === "questionCard" && "bg-accent-content text-white ",
+    cardType === "voteCard" && "bg-accent-content text-white",
+    cardType === "answerCard" &&
+      "bg-white text-black transition ease-in-out delay-0 hover:-translate-y-1 hover:scale-110  duration-100",
+    "bg-[url('/images/splat1.svg')] bg-contain bg-right-bottom bg-no-repeat",
+  );
 
-  let cardTextStyle = classnames('card-body', {
-    'text-primary-content': active,
-  });
+  const btnDispaly = clsx(
+    "btn text-xs sm:text-sm px-3 sm:px-4",
+    cardType === "questionCard" && "hidden",
+    cardType === "voteCard" && "",
+    cardType === "answerCard" && "",
+  );
 
-  let badgeStyle = classnames('indicator-item badge', {
-    invisible: !active,
-  });
+  const bdgDisplay = clsx(
+    "badge",
+    selectedPosition >= 0 && "",
+    selectedPosition == 0 && "hidden",
+  );
 
   let cardText = getCardText(cardType);
-  console.log('hasVoted:', hasVoted);
+
   return (
-    <div className="m-6 indicator">
-      <div className={badgeStyle}>{selectedPosition}</div>
-      <div className={cardStyle} onClick={() => onCardClick()}>
-        <div className={cardTextStyle}>{cardText}</div>
-        {cardType === 'voteCard' && <div className="text-right text-xs italic pr-2">- {hasVoted ? by : '???'} -</div>}
+    <div className={cardBkgd}>
+      <div className="card-body">
+        <div className="mb-auto justify-center font-specialelite text-sm sm:text-lg">
+          {cardText}
+        </div>
+        {cardType === "voteCard" && (
+          <div className="text-right text-xs italic">
+            - {hasVoted ? by : "???"} -
+          </div>
+        )}
+        <div className="card-actions justify-center">
+          <button className={btnDispaly} onClick={() => onCardClick()}>
+            Choisir
+            <div className={bdgDisplay}>{selectedPosition}</div>
+          </button>
+        </div>
       </div>
     </div>
   );
