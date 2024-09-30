@@ -38,10 +38,13 @@ export const GameCard = ({
   }
 
   const cardBkgd = clsx(
-    "card shadow-lg  w-36 sm:w-56 h-64 sm:h-80 flex flex-col items-center justify-start",
-    cardType === "questionCard" && "bg-accent-content text-white",
+    "card shadow-lg  w-36 sm:w-56 h-64 sm:h-80 flex flex-col items-center justify-start shadow-xl",
+    cardType === "questionCard" &&
+      "bg-accent-content text-white bg-[url('/images/splat2.svg')] bg-contain bg-right-bottom bg-no-repeat	",
     cardType === "voteCard" && "bg-accent-content text-white",
-    cardType === "answerCard" && "bg-white text-black",
+    cardType === "answerCard" &&
+      "bg-white text-black transition ease-in-out delay-0 hover:-translate-y-1 hover:scale-110  duration-100",
+    "bg-[url('/images/splat1.svg')] bg-contain bg-right-bottom bg-no-repeat	",
   );
 
   const btnDispaly = clsx(
