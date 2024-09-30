@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Lobby } from "boardgame.io/react";
 import BlancMangerQQ from "../game/game";
 import BlancMangerQQBoard from "../../components/board";
+import clsx from "clsx";
 
 // Replace TypeScript enum with a plain object
 const LobbyPhases = {
@@ -21,10 +22,11 @@ const BM2QLobby = () => {
       gameServer={server}
       lobbyServer={server}
       debug={true}
+      refreshInterval={2500}
       gameComponents={[{ game: BlancMangerQQ, board: BlancMangerQQBoard }]}
       renderer={(L) => {
         return (
-          <div className="absolute h-full w-full bg-green-900">
+          <div className="absolute h-full w-full">
             {L.phase === LobbyPhases.ENTER && <EnterLobbyView L={L} />}
             {L.phase === LobbyPhases.LIST && <ListGamesView L={L} />}
             {L.phase === LobbyPhases.PLAY && <RunningMatchView L={L} />}
@@ -48,21 +50,15 @@ const EnterLobbyView = ({ L }) => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-base-100">
       <div className="w-full max-w-xs rounded-lg bg-white p-6 shadow-lg">
-        <h1 className="mb-4 text-center text-2xl font-bold">Enter Your Name</h1>
+        <h1 className="mb-4 text-center text-2xl font-bold">Entre ton nom</h1>
         <form>
           <div className="mb-4">
-            <label
-              htmlFor="name"
-              className="mb-2 block text-sm font-bold text-gray-700"
-            >
-              Name:
-            </label>
             <input
               type="text"
               id="name"
               name="name"
-              className="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
-              placeholder="Your Name"
+              className="input w-full max-w-xs"
+              placeholder="Ton nom ici"
               value={playerName}
               onFocus={() => {
                 setPlayerName("");
@@ -79,14 +75,14 @@ const EnterLobbyView = ({ L }) => {
           </div>
           <button
             type="submit"
-            className="focus:shadow-outline w-full rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
+            className="btn btn-accent btn-active w-full"
             onClick={() => {
               if (playerName !== "") {
                 L.handleEnterLobby(playerName);
               }
             }}
           >
-            Enter
+            Entrer
           </button>
         </form>
       </div>
@@ -109,20 +105,19 @@ const ListGamesView = ({ L }) => {
     <div className="p-2">
       <button
         type="submit"
-        className="focus:shadow-outline rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
+        className="btn btn-error btn-xs sm:btn-sm"
         onClick={() => {
           L.handleExitLobby();
         }}
       >
-        Leave Lobby
+        Quitter
       </button>
-      <div className="flex w-full justify-center">
+      <div className="flex w-full justify-center bg-base-100">
         <div className="max-w-lg flex-grow">
-          <div className="text-center">Hi {L.playerName}!</div>
+          <div className="mb-5 text-center">Salut {L.playerName}!</div>
           <div className="flex items-center justify-evenly gap-1">
-            <label htmlFor="playerCount">Players:</label>
             <select
-              className="flex-grow text-primary-content"
+              className="select select-bordered select-sm w-full max-w-xs"
               name="playerCount"
               id="playerCountSelect"
               defaultValue={"2"}
@@ -130,6 +125,10 @@ const ListGamesView = ({ L }) => {
                 setNumPlayers(parseInt(value));
               }}
             >
+              <option disabled selected>
+                Nombre de joueur
+              </option>
+
               <option value="2">2</option>
               <option value="3">3</option>
               <option value="4">4</option>
@@ -140,26 +139,42 @@ const ListGamesView = ({ L }) => {
             </select>
             <button
               type="submit"
-              className="focus:shadow-outline rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
+              className="btn btn-primary btn-xs sm:btn-sm"
               onClick={() => {
                 L.handleCreateMatch(L.gameComponents[0].game.name, numPlayers);
               }}
             >
-              Create Match
+              Créer une partie
             </button>
           </div>
 
-          <div className="text-lg">Join a Match</div>
-          {matches.map((m) => (
-            <div
-              className="flex items-center justify-between gap-3 border-b-2 border-black"
-              key={m.matchID}
-            >
-              <div>{m.gameName}</div>
-              <div>{m.players.map((p) => p.name ?? "[free]").join(", ")}</div>
-              {createMatchButtons(L, m, numPlayers)}
-            </div>
-          ))}
+          <div className="mt-5 overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Partie</th>
+                  <th>Joueurs</th>
+                  <th></th>
+                </tr>
+              </thead>
+              {matches.map((m) => (
+                <tr key={m.matchID}>
+                  <td>{m.matchID}</td>
+                  <td>
+                    {m.players.map((p, index) => (
+                      <span
+                        key={index}
+                        className={`badge m-2 ${p.name ? "badge-primary" : "badge-secondary"}`}
+                      >
+                        {p.name ?? "libre"}
+                      </span>
+                    ))}
+                  </td>
+                  <td>{createMatchButtons(L, m, numPlayers)}</td>
+                </tr>
+              ))}
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -178,12 +193,12 @@ const RunningMatchView = ({ L }) => {
       )}
       <div className="absolute">
         <button
-          className="focus:shadow-outline rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
+          className="btn btn-error btn-xs sm:btn-sm"
           onClick={() => {
             L.handleExitMatch();
           }}
         >
-          Exit
+          Quitter
         </button>
       </div>
     </div>
@@ -197,12 +212,12 @@ function createMatchButtons(L, m, numPlayers) {
     return (
       <button
         type="submit"
-        className="focus:shadow-outline rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
+        className="btn btn-error btn-xs sm:btn-sm"
         onClick={() => {
           L.handleLeaveMatch(m.gameName, m.matchID);
         }}
       >
-        Leave
+        Sortir
       </button>
     );
   }
@@ -210,12 +225,12 @@ function createMatchButtons(L, m, numPlayers) {
     return (
       <button
         type="submit"
-        className="focus:shadow-outline rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
+        className="btn btn-success btn-xs sm:btn-sm"
         onClick={() => {
           L.handleJoinMatch(m.gameName, m.matchID, "" + freeSeat.id);
         }}
       >
-        Join
+        Rejoindre
       </button>
     );
   }
@@ -224,7 +239,7 @@ function createMatchButtons(L, m, numPlayers) {
       <>
         <button
           type="submit"
-          className="focus:shadow-outline rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
+          className="btn btn-success btn-xs mr-2 sm:btn-sm"
           onClick={() => {
             L.handleStartMatch(m.gameName, {
               numPlayers,
@@ -233,16 +248,16 @@ function createMatchButtons(L, m, numPlayers) {
             });
           }}
         >
-          Play
+          Jouer
         </button>
         <button
           type="submit"
-          className="focus:shadow-outline rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
+          className="btn btn-error btn-xs sm:btn-sm"
           onClick={() => {
             L.handleLeaveMatch(m.gameName, m.matchID);
           }}
         >
-          Leave
+          Sortir
         </button>
       </>
     );
