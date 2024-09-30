@@ -1,40 +1,12 @@
-Here’s a complete **README.md** file for your project:
-
----
-
 # BM2Q
 
-BM2Q is a personal version of **Cards Against Humanity**, developed during the COVID lockdown. This project facilitates multiplayer gaming with a web-based interface. It has been updated recently to integrate the latest version of **boardgame.io**, providing a smooth and responsive gameplay experience.
+BM2Q is a personal version of **Cards Against Humanity**, developed during the COVID lockdown and migrated to nextjs, tailwindcss with daisyui.
 
-## Table of Contents
-- [BM2Q](#bm2q)
-  - [Table of Contents](#table-of-contents)
-  - [Features](#features)
-  - [Technologies Used](#technologies-used)
-  - [Installation](#installation)
-    - [Prerequisites](#prerequisites)
-    - [Steps](#steps)
-  - [Running the Project](#running-the-project)
-  - [License](#license)
-
-## Features
-- Multiplayer online gameplay based on **Cards Against Humanity**.
-- Real-time interactions with robust state management using **boardgame.io**.
-- Clean and responsive UI powered by **React**.
-- Seamless integration of the latest version of **boardgame.io**.
-- Developed to connect friends remotely during the COVID lockdown.
-
-## Technologies Used
-- **Node.js** (version <= 21)
-- **Next JS**
-- **boardgame.io**
-- **Koa** (for serving static files)
 
 ## Installation
 
 ### Prerequisites
-- **Node.js** (version <= 20)
-- **npm** (comes with Node.js)
+- **Node.js** (version <= 21)
 
 To check if Node.js is installed and confirm the version, run:
 
@@ -67,20 +39,19 @@ To run the application, you'll need to start both the **server** and the **clien
    npm run serve
    ```
 
-   This will start the backend server, which handles game logic and serves static files.
+   This will start the backend server, which handles game logic and serves static files (port 8000)
 
 2. **Run the client**:
    Open a separate terminal window and run:
    ```bash
-   npm run start
-   ```
+   npm run start   ```
 
-   This will start the React development server, and you can access the application at `http://localhost:3000`.
+   This will start the game development server, and you can access the application at `http://localhost:3000`.
 
 Ensure both the server and client are running for the application to work correctly.
 
 
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
-
+## Known Issue & TODOs
+- UI is crap and could be greatly enhanced
+- Player names are not passe to the game letting the default "Joueur x" in the leaderboard
+- Integrate multi-answers set (should work but not tested)

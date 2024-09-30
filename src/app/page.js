@@ -20,7 +20,7 @@ const BM2QLobby = () => {
     <Lobby
       gameServer={server}
       lobbyServer={server}
-      debug={true}
+      debug={false}
       refreshInterval={2500}
       gameComponents={[{ game: BlancMangerQQ, board: BlancMangerQQBoard }]}
       renderer={(L) => {
