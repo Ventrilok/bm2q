@@ -26,7 +26,11 @@
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "src/components/board/index.js",
+    "src/app/utils/constant.js",
+    "src/app/lobby/page.js",
+    "src/app/lobby/useImage.js"
   ],
   "exclude": [
     "node_modules"

@@ -14,6 +14,7 @@ module.exports = {
   },
   plugins: [require("@tailwindcss/typography"), require("daisyui")],
   daisyui: {
-    themes: ["retro"],
+    themes: ["sunset", "aqua"],
+    darkTheme: "business", // Set this if you want to override default dark mode behavior
   },
 };
