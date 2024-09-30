@@ -61,11 +61,11 @@ const BlancMangerQQBoard = (props) => {
     <div className="flex h-screen flex-col justify-between bg-base-100 text-black">
       <div className="w-full bg-neutral p-4">
         <div className="flex flex-wrap justify-center gap-4">
-          <div class="flex w-24 flex-col items-center rounded bg-white p-2 shadow-lg sm:w-32">
-            <p class="text-xs font-bold sm:text-sm md:text-base">
+          <div className="flex w-24 flex-col items-center rounded bg-white p-2 shadow-lg sm:w-32">
+            <p className="text-xs font-bold sm:text-sm md:text-base">
               {G.firstAt}{" "}
             </p>
-            <p class="text-xs sm:text-sm">Manches</p>
+            <p className="text-xs sm:text-sm">Manches</p>
           </div>
           <Leaderboard
             players={G.players}
@@ -101,16 +101,16 @@ const BlancMangerQQBoard = (props) => {
               ))}
             </div>
           </div>
-          <div class="fixed bottom-4 right-4 flex space-x-2 sm:space-x-4">
+          <div className="fixed bottom-4 right-4 flex space-x-2 sm:space-x-4">
             <button
-              class="btn btn-xs sm:btn-sm md:btn-md lg:btn-lg"
+              className="btn btn-xs sm:btn-sm md:btn-md lg:btn-lg"
               disabled={G.players[playerID].hasChangedCard}
               onClick={() => changeHand()}
             >
               Changer
             </button>
             <button
-              class="btn btn-success btn-xs sm:btn-sm md:btn-md lg:btn-lg"
+              className="btn btn-success btn-xs sm:btn-sm md:btn-md lg:btn-lg"
               onClick={() => validateChoice()}
             >
               Valider
