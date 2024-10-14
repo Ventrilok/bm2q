@@ -14,34 +14,36 @@ const LobbyPhases = {
 const port = process.env.REACT_APP_PORT;
 
 const BM2QLobby = () => {
-  const { protocol, hostname, port } = window.location;
-  const server = `${protocol}//${hostname}:${port == 3000 ? 8000 : port}`;
-  return (
-    <Lobby
-      gameServer={server}
-      lobbyServer={server}
-      debug={false}
-      refreshInterval={2500}
-      gameComponents={[{ game: BlancMangerQQ, board: BlancMangerQQBoard }]}
-      renderer={(L) => {
-        return (
-          <div className="absolute h-full w-full">
-            {L.phase === LobbyPhases.ENTER && <EnterLobbyView L={L} />}
-            {L.phase === LobbyPhases.LIST && <ListGamesView L={L} />}
-            {L.phase === LobbyPhases.PLAY && <RunningMatchView L={L} />}
+  if (typeof window !== "undefined") {
+    const { protocol, hostname, port } = window.location;
+    const server = `${protocol}//${hostname}:${port == 3000 ? 8000 : port}`;
+    return (
+      <Lobby
+        gameServer={server}
+        lobbyServer={server}
+        debug={false}
+        refreshInterval={2500}
+        gameComponents={[{ game: BlancMangerQQ, board: BlancMangerQQBoard }]}
+        renderer={(L) => {
+          return (
+            <div className="absolute h-full w-full">
+              {L.phase === LobbyPhases.ENTER && <EnterLobbyView L={L} />}
+              {L.phase === LobbyPhases.LIST && <ListGamesView L={L} />}
+              {L.phase === LobbyPhases.PLAY && <RunningMatchView L={L} />}
 
-            {/* {L.errorMsg && (
+              {/* {L.errorMsg && (
               <div className="absolute bottom-5 left-0 right-0 flex justify-center">
                 <div className=" text-center rounded-md bg-red-700 w-2/3 max-w-sm shadow-2xl p-4">
                   ⚠️{L.errorMsg}
                 </div>
               </div>
             )} */}
-          </div>
-        );
-      }}
-    />
-  );
+            </div>
+          );
+        }}
+      />
+    );
+  }
 };
 
 const EnterLobbyView = ({ L }) => {

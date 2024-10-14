@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+  backend:
+    build: ./ # Path to backend directory
+    command: ["npm", "run", "serve"]
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - app-network
+
+  frontend:
+    build: ./ # Path to frontend directory
+    command: ["npm", "run", "start"]
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_BACKEND_URL=http://backend:8000 # Frontend connects to backend
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
