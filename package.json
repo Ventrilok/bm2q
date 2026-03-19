@@ -7,8 +7,8 @@
     "dev:split": "concurrently \"next dev --turbopack\" \"tsx watch src/server/index.ts\"",
     "dev:client": "next dev --turbopack",
     "dev:server": "tsx watch src/server/index.ts",
-    "build": "next build",
-    "start": "tsx server.ts",
+    "build": "next build && npx tsc -p tsconfig.server.json",
+    "start": "node dist/server.js",
     "serve": "tsx src/server/index.ts",
     "lint": "next lint"
   },
