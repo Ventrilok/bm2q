@@ -1,24 +1,22 @@
-version: "3"
-
 services:
   backend:
-    build: ./ # Path to backend directory
-    command: ["npm", "run", "serve"]
+    build: .
+    command: ["npx", "tsx", "src/server/index.ts"]
     ports:
-      - "8000:8000"
+      - "2567:2567"
     environment:
       - NODE_ENV=production
+      - COLYSEUS_PORT=2567
     networks:
       - app-network
 
   frontend:
-    build: ./ # Path to frontend directory
+    build: .
     command: ["npm", "run", "start"]
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - REACT_APP_BACKEND_URL=http://backend:8000 # Frontend connects to backend
     depends_on:
       - backend
     networks:

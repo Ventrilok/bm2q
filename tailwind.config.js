@@ -1,20 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {
-      fontFamily: {
-        specialelite: ["Special Elite", "sans-serif"],
-      },
-    },
+    extend: {},
   },
-  plugins: [require("@tailwindcss/typography"), require("daisyui")],
-  daisyui: {
-    themes: ["light"],
-    darkTheme: "dracula", // Set this if you want to override default dark mode behavior
-  },
+  plugins: [],
 };

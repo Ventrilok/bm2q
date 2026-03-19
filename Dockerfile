@@ -1,21 +1,14 @@
-# Base image for Node.js
-FROM node:21.7.3
-
-# Set working directory
+FROM node:22-alpine AS base
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the container
-COPY package*.json ./
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev && npm install -D typescript tsx concurrently
 
-# Install all dependencies (both frontend and backend dependencies)
-RUN npm install
-
-# Copy the entire application to the container
+# Copy source
 COPY . .
 
+# Build Next.js
 RUN npm run build
 
-# Expose ports for both frontend (3000) and backend (5000)
-EXPOSE 3000 5000 8000
-
-# Default command will be handled in docker-compose.yml
+EXPOSE 3000 2567
