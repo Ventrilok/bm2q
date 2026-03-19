@@ -1,137 +1,105 @@
 # BM2Q
 
-BM2Q is a personal version of **Cards Against Humanity**, developed during the COVID lockdown and later migrated to **Next.js**, **Tailwind CSS** with **DaisyUI**.
+BM2Q (Blanc Manger 2 Questions) is a multiplayer party card game inspired by **Cards Against Humanity**, built with **Next.js**, **Tailwind CSS**, and **Colyseus** for real-time multiplayer.
 
-We are well aware that the game is not politically correct and can be offensive to some people. The content of the game is not endorsed by us, and it is intended purely for entertainment purposes.
+Players complete fill-in-the-blank statements using offensive, absurd, or politically incorrect answer cards. The funniest answer wins the round.
+
+> The content of this game is intentionally provocative and not politically correct. It is intended purely for entertainment among consenting adults.
 
 ---
 
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![DaisyUI](https://img.shields.io/badge/DaisyUI-5A29E4?style=for-the-badge&logo=daisyui&logoColor=white)
-![Boardgame.io](https://img.shields.io/badge/Boardgame.io-FF7E00?style=for-the-badge&logo=boardgame.io&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Colyseus](https://img.shields.io/badge/Colyseus-7B4FFF?style=for-the-badge&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ---
 
-## Game Rules
+## Tech Stack
 
-The game is a simple card game where players complete fill-in-the-blank statements using words or phrases typically deemed as offensive, risqué, or politically incorrect printed on playing cards.
+- **Frontend**: Next.js 15, React 19, Tailwind CSS, Framer Motion
+- **Backend**: Colyseus (real-time multiplayer framework), Express
+- **Language**: TypeScript (full stack)
+- **Deployment**: Docker / Docker Compose
 
----
+## How to Play
+
+1. One player creates a room and shares the 4-letter code
+2. Other players join using the code
+3. Each round, a question card with blanks is shown
+4. Players pick answer cards from their hand to fill the blanks (some questions require 2 or 3 cards)
+5. Everyone votes for their favorite answer (or passes if none are funny)
+6. A recap shows all answers ranked by votes — winners earn +1 point (or +2 with the golden card)
+7. First player to reach the target score wins
+
+### Features
+
+- **Multi-blank questions**: Some questions need 2 or 3 answer cards, played in order
+- **Round Recap**: After voting, see all answers ranked with vote counts
+- **Golden Card**: One card per match is golden — if the round winner played it, they earn +2 instead of +1
+- **Vote Pass**: Skip voting if no answer makes you laugh
+- **Rematch**: Host can restart with the same players after game over
+- **Player Avatars**: Each player gets a persistent color + emoji avatar
+- **Reconnection**: Players can reconnect within 60 seconds if disconnected mid-game
+- **Change Hand**: Swap your entire hand once per round (limited uses)
 
 ## Installation
 
 ### Prerequisites
 
-- **Node.js** (version <= 21)
+- **Node.js** (v18+)
 
-To check if Node.js is installed and confirm the version, run:
-
-```bash
-node -v
-```
-
-### Steps
-
-1. Clone the repository:
+### Setup
 
 ```bash
-git clone https://github.com/yourusername/BM2Q.git
-```
-
-2. Navigate to the project directory:
-
-```bash
-cd BM2Q
-```
-
-3. Install the dependencies:
-
-```bash
+git clone https://github.com/Ventrilok/bm2q.git
+cd bm2q
 npm install
 ```
 
-## Running the Project
+## Running
 
-To run the application, you'll need to start both the server and the client.
-
-1. Run the server:
+### Development
 
 ```bash
-npm run serve
+npm run dev
 ```
 
-This will start the backend server, which handles game logic and serves static files (port 8000).
-
-2. Run the client:
-
-Open a separate terminal window and run:
-
-```bash
-npm run start
-```
-
-This will start the game development server, and you can access the application at http://localhost:3000.
-
-Ensure both the server and client are running for the application to work correctly.
+This starts both the Next.js frontend and Colyseus game server on a single port (default: 3000).
 
 ### Docker
 
-A Dockerfile and `docker-compose.yml` are provided to build and run the application in a container.
-
-1. Build the Docker image:
-
 ```bash
 docker compose build
-```
-
-2. Run the Docker container:
-
-```bash
 docker compose up
 ```
 
-The application will be accessible at http://localhost:3000.
+The application will be accessible at `http://localhost:3000`.
 
-To stop the Docker container, run:
+## Project Structure
 
-```bash
-docker compose down
+```
+src/
+  server/           # Colyseus game server
+    rooms/          # Game room logic (BM2QRoom)
+    schema/         # Colyseus state schemas
+    data/           # Game data (questions, answers, congrats)
+  app/              # Next.js pages
+    lobby/          # Room creation/joining + game board
+  components/game/  # Game UI components
+  lib/              # Client hooks and utilities
+  types/            # Shared TypeScript types
 ```
 
-## How to Play BM2Q
+## Customizing Game Content
 
-Once the game is running, retrieve the IP hosting the game and ask your players to connect via `http://<IP_HOSTING_THE_GAME>:3000`.
+Edit the JSON files in `src/server/data/`:
 
-Players will enter a lobby where they can create or join games. Once a game is started, the game master will start the game and players will join.
-
-Each turn, a card with blanks will be displayed. Players will choose the best answer from their hand to complete the sentence. All players then vote on the best answer, and the player with the most votes wins the round.
-
-## Personalize the Game
-
-You can personalize the game by editing the following files in the `/src/app/data` folder:
-
-- answers.json
-- congrats.json
-- questions.json
-- questions2.json
+- **`answers.json`** — Array of answer card strings
+- **`questions.json`** — Array of `{ text, pick }` objects. Use `______` for blanks (the `pick` value is auto-derived from the number of blanks)
+- **`congrats.json`** — Array of winner congratulation messages (use `______` as placeholder for the winner's name)
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Known Issues & TODOs
-
-- UI improvements needed for a more polished experience
-- Player names are not passed into the game, displaying the default "Joueur x" in the leaderboard
-- Multi-answer sets should be integrated (feature exists but untested)
-
-## Useful Links
-
-- [Cards Against Humanity](https://cardsagainsthumanity.com/)
-- [Next.js](https://nextjs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [DaisyUI](https://daisyui.com/)
-- [Boardgame.io](https://boardgame.io/)
+This project is licensed under the MIT License.

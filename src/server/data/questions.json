@@ -104,7 +104,7 @@
     "pick": "1"
   },
   {
-    "text": "La meilleur moyen pour lutter contre la surnatalité en Afrique aujourd'hui, c'est ______",
+    "text": "Le meilleur moyen pour lutter contre la surnatalité en Afrique aujourd'hui, c'est ______",
     "pick": "1"
   },
   {
@@ -132,7 +132,7 @@
     "pick": "1"
   },
   {
-    "text": "Amen, celui qui crois en moi aura ______ .",
+    "text": "Amen, celui qui croit en moi aura ______ .",
     "pick": "1"
   },
   {
@@ -204,7 +204,7 @@
     "pick": "1"
   },
   {
-    "text": "Entre le COVID et ______ je ne sais pas qui fait le plus de victime.",
+    "text": "Entre le COVID et ______ je ne sais pas qui fait le plus de victimes.",
     "pick": "1"
   },
   {
@@ -236,7 +236,7 @@
     "pick": "1"
   },
   {
-    "text": "______ , c’est comme les mauvaise herbes : il faut traiter le problème à la racine.",
+    "text": "______ , c’est comme les mauvaises herbes : il faut traiter le problème à la racine.",
     "pick": "1"
   },
   {
@@ -248,11 +248,11 @@
     "pick": "1"
   },
   {
-    "text": "Quand j'étais petit, les autres enfatns rêvaient de devenir pompier, moi qui me faisait rêver c'était ______.",
+    "text": "Quand j'étais petit, les autres enfants rêvaient de devenir pompier, moi ce qui me faisait rêver c'était ______.",
     "pick": "1"
   },
   {
-    "text": "L'acuponcture n'a pas marché, l'homéopathie non plus, alors ils ont tenté ______.",
+    "text": "L'acupuncture n'a pas marché, l'homéopathie non plus, alors ils ont tenté ______.",
     "pick": "1"
   },
   {
@@ -340,7 +340,7 @@
     "pick": "1"
   },
   {
-    "text": "Je suis pas raciste, mais______ ça me dérange quand même.",
+    "text": "Je suis pas raciste, mais ______ ça me dérange quand même.",
     "pick": "1"
   },
   {
@@ -472,7 +472,7 @@
     "pick": "1"
   },
   {
-    "text": "______ mon activité préférée avec ma petite soeur.",
+    "text": "______ mon activité préférée avec ma petite sœur.",
     "pick": "1"
   },
   {
@@ -628,7 +628,7 @@
     "pick": "1"
   },
   {
-    "text": "Ça va s’arrêter où cette mode LGBTIQ+, avec ______ ?,.",
+    "text": "Ça va s’arrêter où cette mode LGBTIQ+, avec ______ ?",
     "pick": "1"
   },
   {
@@ -700,7 +700,7 @@
     "pick": "1"
   },
   {
-    "text": "Vous n’avez pas, M. Mitterand, le monopole de ______.",
+    "text": "Vous n’avez pas, M. Mitterrand, le monopole de ______.",
     "pick": "1"
   },
   {
@@ -716,7 +716,7 @@
     "pick": "1"
   },
   {
-    "text": "Le nouveau film de Jean Pierre Jeunet présente un enfant précoce qui découvre ______.",
+    "text": "Le nouveau film de Jean-Pierre Jeunet présente un enfant précoce qui découvre ______.",
     "pick": "1"
   },
   {
@@ -756,7 +756,7 @@
     "pick": "1"
   },
   {
-    "text": "______, un travail baclé.",
+    "text": "______, un travail bâclé.",
     "pick": "1"
   },
   {
@@ -1170,5 +1170,125 @@
   {
     "text": "______ le matin, ______ à midi, ______ le soir : la journée parfaite.",
     "pick": "3"
+  },
+  {
+    "text": "L'IA va bientôt remplacer ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Mon dernier rêve lucide impliquait ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Le problème avec les réseaux sociaux, c'est ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Ma plus grande peur irrationnelle, c'est ______.",
+    "pick": "1"
+  },
+  {
+    "text": "J'ai été viré pour ______ pendant la visioconférence.",
+    "pick": "1"
+  },
+  {
+    "text": "Le dernier message dans le groupe WhatsApp de la famille : ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Spotify m'a généré une playlist basée sur ______.",
+    "pick": "1"
+  },
+  {
+    "text": "J'ai annulé mon abonnement Netflix à cause de ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Le secret pour avoir 10k followers : ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Ma bio Tinder en un mot : ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Le prochain scandale politique impliquera ______.",
+    "pick": "1"
+  },
+  {
+    "text": "J'ai dépensé mes économies dans ______. Aucun regret.",
+    "pick": "1"
+  },
+  {
+    "text": "Le truc que personne n'ose dire à Noël : ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Mon coach de vie m'a conseillé ______.",
+    "pick": "1"
+  },
+  {
+    "text": "La chose la plus gênante trouvée dans l'historique de mon père : ______.",
+    "pick": "1"
+  },
+  {
+    "text": "En Suisse, on a pas de pétrole mais on a ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Le futur de l'humanité se résume à ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Si j'avais une machine à remonter le temps, j'irais empêcher ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Mon pire date Tinder s'est terminé par ______.",
+    "pick": "1"
+  },
+  {
+    "text": "La chose qui manque le plus dans l'éducation nationale : ______.",
+    "pick": "1"
+  },
+  {
+    "text": "En cas d'apocalypse zombie, mon arme de choix serait ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Le nouveau challenge TikTok : filmer ______ pendant 24h.",
+    "pick": "1"
+  },
+  {
+    "text": "La vraie raison pour laquelle les dinosaures ont disparu : ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Mon testament stipule que mes cendres seront mélangées avec ______.",
+    "pick": "1"
+  },
+  {
+    "text": "La chose que ChatGPT refuse de générer : ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Au paradis il y a ______, en enfer il y a ______.",
+    "pick": "2"
+  },
+  {
+    "text": "J'ai créé une start-up qui combine ______ et ______. Les investisseurs adorent.",
+    "pick": "2"
+  },
+  {
+    "text": "Le secret de la longévité de ma grand-mère : ______ tous les jours et jamais de ______.",
+    "pick": "2"
+  },
+  {
+    "text": "Lors de mon dernier entretien d'embauche, on m'a demandé mon avis sur ______. J'ai répondu ______.",
+    "pick": "2"
+  },
+  {
+    "text": "Dans un monde parallèle, ______ est le président et ______ est la monnaie officielle.",
+    "pick": "2"
   }
 ]
