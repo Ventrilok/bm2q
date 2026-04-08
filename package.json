@@ -27,6 +27,9 @@
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.2"
   },
+  "overrides": {
+    "nanoid@2": "3.3.8"
+  },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
