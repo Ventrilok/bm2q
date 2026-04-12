@@ -31,7 +31,7 @@ export function QuestionCard({ text, pick, compact }: QuestionCardProps) {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       className={`relative w-full overflow-hidden rounded-2xl border-2 border-[var(--border)] bg-[var(--card-dark)] ${
-        compact ? "max-w-xl px-5 py-4" : "max-w-md px-6 py-6"
+        compact ? "max-w-xl px-5 py-4 lg:max-w-3xl" : "max-w-md px-6 py-6 sm:max-w-lg"
       }`}
     >
       {pick > 1 && (

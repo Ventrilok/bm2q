@@ -37,7 +37,7 @@ app.prepare().then(() => {
     });
   });
 
-  httpServer.listen(port, () => {
+  gameServer.listen(port).then(() => {
     console.log(`🎮 BM2Q running on http://localhost:${port}`);
     console.log(`   Next.js: http://localhost:${port}`);
     console.log(`   Colyseus: ws://localhost:${port}`);

@@ -136,72 +136,74 @@ function LobbyContent() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="w-full max-w-sm"
+          className="w-full max-w-sm sm:max-w-2xl"
         >
-          {/* Join section */}
-          <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
-            <p className="mb-4 text-center font-game text-lg text-white">
-              Entre le code
-            </p>
-            <div className="mb-4 flex justify-center gap-3">
-              {roomCode.map((char, i) => (
-                <input
-                  key={i}
-                  id={`code-${i}`}
-                  type="text"
-                  maxLength={1}
-                  value={char}
-                  onChange={(e) => handleCodeInput(i, e.target.value)}
-                  onKeyDown={(e) => handleCodeKeyDown(i, e)}
-                  className="h-16 w-14 rounded-xl border-2 border-[var(--border)] bg-[var(--surface-2)] text-center text-2xl font-extrabold uppercase text-[var(--yellow)] outline-none transition-colors focus:border-[var(--accent)]"
-                  placeholder="·"
-                />
-              ))}
+          <div className="flex flex-col gap-4 sm:grid sm:grid-cols-2 sm:gap-6">
+            {/* Join section */}
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+              <p className="mb-4 text-center font-game text-lg text-white">
+                Entre le code
+              </p>
+              <div className="mb-4 flex justify-center gap-3">
+                {roomCode.map((char, i) => (
+                  <input
+                    key={i}
+                    id={`code-${i}`}
+                    type="text"
+                    maxLength={1}
+                    value={char}
+                    onChange={(e) => handleCodeInput(i, e.target.value)}
+                    onKeyDown={(e) => handleCodeKeyDown(i, e)}
+                    className="h-16 w-14 rounded-xl border-2 border-[var(--border)] bg-[var(--surface-2)] text-center text-2xl font-extrabold uppercase text-[var(--yellow)] outline-none transition-colors focus:border-[var(--accent)]"
+                    placeholder="·"
+                  />
+                ))}
+              </div>
+              <button
+                onClick={handleJoin}
+                disabled={
+                  roomCode.join("").length !== 4 || connecting
+                }
+                className="w-full rounded-xl bg-[var(--accent)] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[var(--accent-dim)] disabled:opacity-50"
+              >
+                {connecting ? "Connexion..." : "Rejoindre"}
+              </button>
             </div>
-            <button
-              onClick={handleJoin}
-              disabled={
-                roomCode.join("").length !== 4 || connecting
-              }
-              className="w-full rounded-xl bg-[var(--accent)] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[var(--accent-dim)] disabled:opacity-50"
-            >
-              {connecting ? "Connexion..." : "Rejoindre"}
-            </button>
-          </div>
 
-          {/* Divider */}
-          <div className="relative my-4 text-center text-sm text-[var(--text-muted)]">
-            <span className="relative z-10 bg-[var(--bg)] px-4">ou</span>
-            <div className="absolute left-0 right-0 top-1/2 h-px bg-[var(--border)]" />
-          </div>
-
-          {/* Create */}
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
-            <p className="mb-3 text-center font-game text-lg text-white">
-              Nombre de manches
-            </p>
-            <div className="mb-4 flex justify-center gap-2">
-              {[5, 10, 15, 20].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setMaxRounds(n)}
-                  className={`rounded-lg px-4 py-2 text-sm font-bold transition-all ${
-                    maxRounds === n
-                      ? "bg-[var(--accent)] text-white"
-                      : "border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:border-[var(--accent)]"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
+            {/* Divider — hidden on sm+ (side-by-side) */}
+            <div className="relative my-0 text-center text-sm text-[var(--text-muted)] sm:hidden">
+              <span className="relative z-10 bg-[var(--bg)] px-4">ou</span>
+              <div className="absolute left-0 right-0 top-1/2 h-px bg-[var(--border)]" />
             </div>
-            <button
-              onClick={handleCreate}
-              disabled={connecting}
-              className="w-full rounded-xl border border-[var(--border)] px-6 py-3 text-base font-semibold text-[var(--text-muted)] transition-all hover:border-[var(--accent)] hover:text-white disabled:opacity-50"
-            >
-              {connecting ? "Création..." : "Créer une partie"}
-            </button>
+
+            {/* Create */}
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+              <p className="mb-3 text-center font-game text-lg text-white">
+                Nombre de manches
+              </p>
+              <div className="mb-4 flex justify-center gap-2">
+                {[5, 10, 15, 20].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setMaxRounds(n)}
+                    className={`rounded-lg px-4 py-2 text-sm font-bold transition-all ${
+                      maxRounds === n
+                        ? "bg-[var(--accent)] text-white"
+                        : "border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:border-[var(--accent)]"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={handleCreate}
+                disabled={connecting}
+                className="w-full rounded-xl border border-[var(--border)] px-6 py-3 text-base font-semibold text-[var(--text-muted)] transition-all hover:border-[var(--accent)] hover:text-white disabled:opacity-50"
+              >
+                {connecting ? "Création..." : "Créer une partie"}
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -231,7 +233,7 @@ function LobbyContent() {
   // Avatar colors now come from the shared avatars utility
 
   return (
-    <div className="flex min-h-screen flex-col px-6 py-6">
+    <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-6 py-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="font-game text-2xl text-white">Salon</h2>
@@ -243,56 +245,58 @@ function LobbyContent() {
         </button>
       </div>
 
-      {/* Room code */}
-      <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
-        <p className="text-xs uppercase tracking-[2px] text-[var(--text-muted)]">
-          Code de la partie
-        </p>
-        <p className="mt-3 text-5xl font-extrabold tracking-[12px] text-[var(--yellow)]"
-          style={{ textShadow: "0 0 30px rgba(251,191,36,0.3)" }}
-        >
-          {state?.roomCode || "..."}
-        </p>
-        <p className="mt-2 text-xs text-[var(--text-muted)]">
-          Partage ce code avec tes amis
-        </p>
-      </div>
+      <div className="mt-6 flex flex-col gap-6 lg:grid lg:grid-cols-2">
+        {/* Room code */}
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
+          <p className="text-xs uppercase tracking-[2px] text-[var(--text-muted)]">
+            Code de la partie
+          </p>
+          <p className="mt-3 text-5xl font-extrabold tracking-[12px] text-[var(--yellow)] sm:text-6xl"
+            style={{ textShadow: "0 0 30px rgba(251,191,36,0.3)" }}
+          >
+            {state?.roomCode || "..."}
+          </p>
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
+            Partage ce code avec tes amis
+          </p>
+        </div>
 
-      {/* Players */}
-      <div className="mt-6">
-        <h3 className="mb-3 text-xs uppercase tracking-wider text-[var(--text-muted)]">
-          Joueurs ({players.length}/8)
-        </h3>
-        <div className="flex flex-col gap-2">
-          <AnimatePresence>
-            {players.map(([id, player]) => {
-              const avatar = getAvatar(player.avatarIndex);
-              return (
-              <motion.div
-                key={id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
-              >
-                <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-full text-sm ${avatar.color}`}
+        {/* Players */}
+        <div>
+          <h3 className="mb-3 text-xs uppercase tracking-wider text-[var(--text-muted)]">
+            Joueurs ({players.length}/8)
+          </h3>
+          <div className="flex flex-col gap-2">
+            <AnimatePresence>
+              {players.map(([id, player]) => {
+                const avatar = getAvatar(player.avatarIndex);
+                return (
+                <motion.div
+                  key={id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
                 >
-                  {avatar.emoji}
-                </div>
-                <span className="text-base font-medium">{player.name}</span>
-                {id === state?.hostId && (
-                  <span className="ml-auto rounded bg-[var(--accent)]/15 px-2 py-0.5 text-xs text-[var(--accent)]">
-                    Hôte
-                  </span>
-                )}
-                {id !== state?.hostId && (
-                  <div className="ml-auto h-2 w-2 animate-pulse rounded-full bg-[var(--green)]" />
-                )}
-              </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                  <div
+                    className={`flex h-9 w-9 items-center justify-center rounded-full text-sm ${avatar.color}`}
+                  >
+                    {avatar.emoji}
+                  </div>
+                  <span className="text-base font-medium">{player.name}</span>
+                  {id === state?.hostId && (
+                    <span className="ml-auto rounded bg-[var(--accent)]/15 px-2 py-0.5 text-xs text-[var(--accent)]">
+                      Hôte
+                    </span>
+                  )}
+                  {id !== state?.hostId && (
+                    <div className="ml-auto h-2 w-2 animate-pulse rounded-full bg-[var(--green)]" />
+                  )}
+                </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 

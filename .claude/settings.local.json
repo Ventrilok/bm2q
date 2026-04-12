@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm ls:*)",
+      "Bash(git remote:*)",
+      "mcp__github__list_pull_requests",
+      "mcp__github__merge_pull_request",
+      "Bash(python3:*)",
+      "Bash(pdftoppm -v)",
+      "Bash(npx tsc:*)",
+      "Bash(./node_modules/.bin/tsc --noEmit --pretty)",
+      "Bash(grep -E \"\\\\.\\(tsx?|css\\)$\")"
+    ]
+  },
+  "enabledPlugins": {
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true
+  }
+}
