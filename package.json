@@ -14,10 +14,10 @@
   },
   "dependencies": {
     "@colyseus/schema": "^2.0.35",
-    "@colyseus/ws-transport": "^0.15.0",
+    "@colyseus/ws-transport": "^0.17.13",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "colyseus": "^0.15.0",
+    "colyseus": "^0.17.9",
     "colyseus.js": "^0.15.0",
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.468.0",
