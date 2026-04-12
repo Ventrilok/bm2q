@@ -35,7 +35,7 @@ function LobbyContent() {
 
   const [roomCode, setRoomCode] = useState(["", "", "", ""]);
   const [mode, setMode] = useState<"choose" | "lobby">("choose");
-  const [firstAt, setFirstAt] = useState(15);
+  const [maxRounds, setMaxRounds] = useState(10);
 
   // Navigate to game when phase changes from lobby
   const isInGame =
@@ -43,7 +43,7 @@ function LobbyContent() {
     state.phase !== "lobby";
 
   const handleCreate = async () => {
-    await createRoom(playerName, firstAt);
+    await createRoom(playerName, maxRounds);
   };
 
   const handleJoin = async () => {
@@ -178,20 +178,20 @@ function LobbyContent() {
           {/* Create */}
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
             <p className="mb-3 text-center font-game text-lg text-white">
-              Objectif
+              Nombre de manches
             </p>
             <div className="mb-4 flex justify-center gap-2">
               {[5, 10, 15, 20].map((n) => (
                 <button
                   key={n}
-                  onClick={() => setFirstAt(n)}
+                  onClick={() => setMaxRounds(n)}
                   className={`rounded-lg px-4 py-2 text-sm font-bold transition-all ${
-                    firstAt === n
+                    maxRounds === n
                       ? "bg-[var(--accent)] text-white"
                       : "border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:border-[var(--accent)]"
                   }`}
                 >
-                  {n} pts
+                  {n}
                 </button>
               ))}
             </div>

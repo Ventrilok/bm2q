@@ -33,7 +33,7 @@ export interface PlayerState {
 
 export interface GameState {
   phase: GamePhase;
-  firstAt: number;
+  maxRounds: number;
   nbRound: number;
   currentQuestion: Question | null;
   players: Map<string, PlayerState>;
@@ -47,5 +47,5 @@ export interface GameState {
 }
 
 export const NB_CARD_IN_HAND = 8;
-export const DEFAULT_FIRST_AT = 15;
+export const DEFAULT_MAX_ROUNDS = 10;
 export const CHANGE_QUOTA = 2;

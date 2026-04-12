@@ -30,7 +30,7 @@ export interface QuestionState {
 
 export interface GameRoomState {
   phase: string;
-  firstAt: number;
+  maxRounds: number;
   nbRound: number;
   currentQuestion: QuestionState;
   players: Map<string, PlayerState>;
@@ -50,7 +50,7 @@ interface UseGameRoomReturn {
   myId: string | null;
   error: string | null;
   connecting: boolean;
-  createRoom: (playerName: string, firstAt?: number) => Promise<void>;
+  createRoom: (playerName: string, maxRounds?: number) => Promise<void>;
   joinRoom: (roomCode: string, playerName: string) => Promise<void>;
   startGame: () => void;
   playCard: (uid: string) => void;
@@ -85,7 +85,7 @@ function parseSyncState(data: any): GameRoomState {
 
   return {
     phase: data.phase || "lobby",
-    firstAt: data.firstAt || 15,
+    maxRounds: data.maxRounds || 10,
     nbRound: data.nbRound || 0,
     currentQuestion: {
       text: data.currentQuestion?.text || "",
@@ -148,12 +148,12 @@ export function useGameRoom(): UseGameRoomReturn {
   }, []);
 
   const createRoom = useCallback(
-    async (playerName: string, firstAt?: number) => {
+    async (playerName: string, maxRounds?: number) => {
       setError(null);
       setConnecting(true);
       try {
         const client = getClient();
-        const newRoom = await client.create("bm2q", { playerName, firstAt });
+        const newRoom = await client.create("bm2q", { playerName, maxRounds });
         setupRoom(newRoom);
       } catch (err: any) {
         console.error("Create room error:", err);

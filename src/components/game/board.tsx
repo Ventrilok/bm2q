@@ -124,7 +124,7 @@ export function GameBoard({
           Manche {state.nbRound}
         </span>
         <span className="text-xs text-[var(--text-muted)]">
-          / {state.firstAt} pts
+          / {state.maxRounds}
         </span>
         {isPlay && (
           <span className="ml-auto rounded-md bg-blue-500/15 px-2.5 py-1 text-xs font-semibold text-[var(--blue)]">

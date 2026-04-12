@@ -24,11 +24,29 @@ interface Question {
   pick: string | number;
 }
 
-function shuffleArray<T>(array: T[]): T[] {
+// Module-level: remembers recently used questions across all room instances in this process.
+// Acts as a cross-game exclusion list so new rooms avoid repeating recent questions.
+const globalRecentQuestions: string[] = [];
+const GLOBAL_RECENT_LIMIT = 150; // Remember ~half the pool across rooms
+
+function recordUsedQuestion(text: string) {
+  if (!globalRecentQuestions.includes(text)) {
+    globalRecentQuestions.push(text);
+    if (globalRecentQuestions.length > GLOBAL_RECENT_LIMIT) {
+      globalRecentQuestions.shift();
+    }
+  }
+}
+
+// Mixes crypto-random bytes with a timestamp seed for extra entropy across
+// rapid/sequential game starts in the same process.
+function shuffleArray<T>(array: T[], tsSeed = 0): T[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const rand = randomBytes(4).readUInt32BE(0);
-    const j = rand % (i + 1);
+    const cryptoRand = randomBytes(4).readUInt32BE(0);
+    // XOR with a different slice of the timestamp at each position
+    const mixed = cryptoRand ^ ((tsSeed * (i + 1)) >>> 0);
+    const j = mixed % (i + 1);
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
@@ -45,21 +63,22 @@ function generateRoomCode(): string {
 
 export class BM2QRoom extends Room<GameStateSchema> {
   private questionDeck: Question[] = [];
+  private usedQuestions: Question[] = [];
   private answerDeck: Card[] = [];
   private roundVotes = new Map<string, string>(); // voterId -> targetId
   private roundVoteCounts = new Map<string, number>(); // playerId -> vote count
   private goldenCardPicked = false;
   maxClients = 8;
 
-  onCreate(options: { roomCode?: string; firstAt?: number }) {
+  onCreate(options: { roomCode?: string; maxRounds?: number }) {
     this.setState(new GameStateSchema());
     this.state.roomCode = options.roomCode || generateRoomCode();
     this.state.phase = "lobby";
 
-    // Store the target score (validated to allowed values)
-    const allowedScores = [5, 10, 15, 20];
-    if (options.firstAt && allowedScores.includes(options.firstAt)) {
-      this.state.firstAt = options.firstAt;
+    // Store the max rounds (validated to allowed values)
+    const allowedRounds = [5, 10, 15, 20];
+    if (options.maxRounds && allowedRounds.includes(options.maxRounds)) {
+      this.state.maxRounds = options.maxRounds;
     }
 
     // Set room metadata for lookup by code
@@ -105,7 +124,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
       this.state.goldenCardUid = "";
       this.goldenCardPicked = false;
 
-      this.initializeDecks();
+      this.refillDecksForRematch();
 
       const shuffledCongrats = shuffleArray(congratsData as string[]);
       this.state.congrats = shuffledCongrats[0];
@@ -305,35 +324,81 @@ export class BM2QRoom extends Room<GameStateSchema> {
       return;
     }
 
+    // Notify clients of the disconnection and unblock the phase if all
+    // remaining connected players have already acted.
+    this.broadcastSync();
+    this.checkPhaseAdvance();
+
     try {
       if (!consented) {
         // Allow 60 seconds for reconnection
         await this.allowReconnection(client, 60);
         player.connected = true;
+        // Send fresh state to the reconnected client and notify others.
+        this.broadcastSync();
       }
     } catch {
-      // Reconnection timed out, mark as disconnected
-      // Game continues - other players can still play
+      // Reconnection timed out — game continues without this player.
     }
   }
 
   private initializeDecks() {
-    // Shuffle questions and convert pick to number
-    this.questionDeck = shuffleArray(
-      (questionsData as Question[]).map((q) => ({
-        text: q.text,
-        // Derive pick from the number of blanks in the text
-        pick: (q.text.match(/______/g) || []).length || 1,
-      }))
+    const tsSeed = Date.now();
+    const recentSet = new Set(globalRecentQuestions);
+
+    const allQuestions = (questionsData as Question[]).map((q) => ({
+      text: q.text,
+      pick: (q.text.match(/______/g) || []).length || 1,
+    }));
+
+    // Fresh questions (not recently seen) go on top of the deck (popped first).
+    // Recently seen ones go at the bottom as a fallback if the pool runs dry.
+    const freshQuestions = shuffleArray(
+      allQuestions.filter((q) => !recentSet.has(q.text)),
+      tsSeed
     );
+    const staleQuestions = shuffleArray(
+      allQuestions.filter((q) => recentSet.has(q.text)),
+      tsSeed
+    );
+    this.questionDeck = [...staleQuestions, ...freshQuestions];
+    this.usedQuestions = [];
 
     // Create answer cards with unique IDs and shuffle
     this.answerDeck = shuffleArray(
       (answersData as string[]).map((text) => ({
         text,
         uid: nanoid(10),
-      }))
+      })),
+      tsSeed
     );
+  }
+
+  private refillDecksForRematch() {
+    // For questions: continue from existing deck; only refill when running low
+    if (this.questionDeck.length < this.state.maxRounds) {
+      const tsSeed = Date.now();
+      const recentSet = new Set(globalRecentQuestions);
+
+      const available = [...this.questionDeck, ...this.usedQuestions];
+      const fresh = shuffleArray(available.filter((q) => !recentSet.has(q.text)), tsSeed);
+      const stale = shuffleArray(available.filter((q) => recentSet.has(q.text)), tsSeed);
+      this.questionDeck = [...stale, ...fresh];
+      this.usedQuestions = [];
+    }
+
+    // For answers: continue from existing deck; refill only when running low
+    const neededAnswers = NB_CARD_IN_HAND * this.state.players.size * 3;
+    if (this.answerDeck.length < neededAnswers) {
+      // Add back all answer texts not already waiting in the deck (fresh UIDs)
+      const inDeckTexts = new Set(this.answerDeck.map((c) => c.text));
+      const freshCards = shuffleArray(
+        (answersData as string[])
+          .filter((text) => !inDeckTexts.has(text))
+          .map((text) => ({ text, uid: nanoid(10) }))
+      );
+      this.answerDeck = [...this.answerDeck, ...freshCards];
+    }
   }
 
   private transitionToReady() {
@@ -345,8 +410,10 @@ export class BM2QRoom extends Room<GameStateSchema> {
     this.state.nbRound += 1;
     this.state.phase = "ready";
 
-    // Pop next question
+    // Pop next question and track it as used (both locally and globally)
     const question = this.questionDeck.pop()!;
+    this.usedQuestions.push(question);
+    recordUsedQuestion(question.text);
     this.state.currentQuestion.text = question.text;
     this.state.currentQuestion.pick =
       typeof question.pick === "string"
@@ -453,7 +520,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
       roomCode: this.state.roomCode,
       phase: this.state.phase,
       hostId: this.state.hostId,
-      firstAt: this.state.firstAt,
+      maxRounds: this.state.maxRounds,
       nbRound: this.state.nbRound,
       congrats: this.state.congrats,
       winnerId: this.state.winnerId,
@@ -554,14 +621,9 @@ export class BM2QRoom extends Room<GameStateSchema> {
 
     // Auto-advance after 4 seconds
     this.clock.setTimeout(() => {
-      let hasWinner = false;
-      this.state.players.forEach((player) => {
-        if (player.score >= this.state.firstAt) hasWinner = true;
-      });
-
       this.roundVoteCounts.clear();
 
-      if (hasWinner) {
+      if (this.state.nbRound >= this.state.maxRounds) {
         this.transitionToGameover();
       } else {
         this.transitionToReady();

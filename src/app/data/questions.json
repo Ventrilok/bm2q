@@ -1,5 +1,237 @@
 [
   {
+    "text": "La guerre, c'est bien pour ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Ce qui m'empêche de dormir, c'est ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Cette odeur, c'est ______.",
+    "pick": "1"
+  },
+  {
+    "text": "______ a volé les cookies.",
+    "pick": "1"
+  },
+  {
+    "text": "Des études prouvent que les rats de laboratoires se déplacent cinquante fois plus vite dans les labyrinthes après avoir été exposés à ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Quand j'irai en prison, je cacherai ______ dans mes fesses pour faire de la contrebande.",
+    "pick": "1"
+  },
+  {
+    "text": "Si j'étais Président de la République, je créerais le ministère de ______.",
+    "pick": "1"
+  },
+  {
+    "text": "______ se bonifie avec le temps.",
+    "pick": "1"
+  },
+  {
+    "text": "J'ai rapporté ______ du Mexique.",
+    "pick": "1"
+  },
+  {
+    "text": "La sortie scolaire a été totalement gâchée par ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Dans ma nourriture chinoise, j'ai trouvé ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Dans son nouveau film Disney, Hannah Montana affronte ______ pour la toute première fois.",
+    "pick": "1"
+  },
+  {
+    "text": "Mon slip est trempé à cause de ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Mes parents me cachent ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Les Blancs aiment bien ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Comme j'aimerais ne pas avoir perdu la notice pour ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Désolé les gens, je viens juste de ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Qu'est-ce qu'on peut trouver par milliers au paradis ? ______",
+    "pick": "1"
+  },
+  {
+    "text": "Quel est le plaisir coupable de Batman? ______",
+    "pick": "1"
+  },
+  {
+    "text": "Les psychanalystes s'alarment devant l'émergence de la phobie de ______ chez la plupart de leurs patients.",
+    "pick": "1"
+  },
+  {
+    "text": "Quand j'étais sous acide, ______ se changeait en ______.",
+    "pick": "2"
+  },
+  {
+    "text": "Quand j'étais petit, j'adorais ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Pour réussir à coucher à tous les coups, il suffit de ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Et l'Oscar du meilleur ______ est attribué à ______.",
+    "pick": "2"
+  },
+  {
+    "text": "Le prochain duo super-héros/acolyte : ______ et ______.",
+    "pick": "2"
+  },
+  {
+    "text": "______ : Bon jusqu'à la dernière goutte.",
+    "pick": "1"
+  },
+  {
+    "text": "Désormais, le Père Noël n'apportera plus du charbon aux vilains enfants mais ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Mon super-pouvoir secret, c'est ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Nicolas Sarkozy préfère ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Le plus aigri, c'est ______.",
+    "pick": "1"
+  },
+  {
+    "text": "______ ? Il y a une application pour ça.",
+    "pick": "1"
+  },
+  {
+    "text": "Pour mon prochain tour de magie, je vais faire sortir ______ de ______.",
+    "pick": "2"
+  },
+  {
+    "text": "Durant sa période marron (souvent négligée), Picasso peignait beaucoup de tableaux représentant ______.",
+    "pick": "1"
+  },
+  {
+    "text": "La médecine reconnaît enfin les pouvoirs thérapeutiques de ______.",
+    "pick": "1"
+  },
+  {
+    "text": "______ : Testé par les enfants, approuvé par les mamans.",
+    "pick": "1"
+  },
+  {
+    "text": "Pour maintenir une relation de couple, rien de mieux que ______.",
+    "pick": "1"
+  },
+  {
+    "text": "La vie était dure pour les hommes des cavernes avant ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Ce soir sur M6, Bernard de la Villardière vous propose une enquête exclusive sur ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Les personnes âgées sentent ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Pour se changer les idées, Barack Obama compte sur ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Au petit déjeuner, Vin Diesel mange ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Mamie trouve ______ d'abord perturbant, puis étrangement plaisant.",
+    "pick": "1"
+  },
+  {
+    "text": "C'est un piège ! Et ce piège, c'est ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Faites un haïku : ______ / ______ / ______.",
+    "pick": "3"
+  },
+  {
+    "text": "Le prochain jouet du HappyMeal, c'est ______.",
+    "pick": "1"
+  },
+  {
+    "text": "C'est vrai, j'ai tué ______. Comment?",
+    "pick": "2"
+  },
+  {
+    "text": "Si j'étais riche, je ferais ériger une statue de 15 mètres de haut pour commémorer ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Mais avant de vous tuer, Mr Bond, je dois vous montrer ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Ce soir sur Canal+ découvrez la tragique histoire de ______.",
+    "pick": "2"
+  },
+  {
+    "text": "______ me donne des gaz incontrôlables.",
+    "pick": "1"
+  },
+  {
+    "text": "Le plus hardcore, c'est ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Le plus gay, c'est ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Alors que les USA et l'URSS s'affrontaient dans la course à l'espace, le Mexique dépensait des millions de pesos dans la recherche sur ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Alors que Pharaon restait impassible, Moïse provoqua la onzième plaie : ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Je ne sais pas avec quelles armes se fera la Troisième Guerre Mondiale, mais la Quatrième se fera à coups de ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Selon une rumeur, le plat préféré de Vladimir Poutine est ______ fourré avec ______.",
+    "pick": "2"
+  },
+  {
+    "text": "La dernière chose à laquelle pensa Michael Jackson avant de mourir fut ______.",
+    "pick": "1"
+  },
+  {
+    "text": "Des ethnographes ont récemment découvert une tribu aborigène vouant un culte à ______.",
+    "pick": "1"
+  },
+  {
     "text": "Ce qui distingue l’homme de l’animal, c’est ______.",
     "pick": "1"
   },
@@ -448,10 +680,6 @@
     "pick": "1"
   },
   {
-    "text": "______ fait indéniablement partie intégrante de la culture française.",
-    "pick": "1"
-  },
-  {
     "text": "______ : ma vie, mon œuvre.",
     "pick": "1"
   },
@@ -529,10 +757,6 @@
   },
   {
     "text": "______, c’est comme être un enfant des rues à Manille.",
-    "pick": "1"
-  },
-  {
-    "text": "______ fait indéniablement partie intégrante de la culture française.",
     "pick": "1"
   },
   {

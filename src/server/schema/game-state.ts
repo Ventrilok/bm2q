@@ -51,7 +51,7 @@ export class PlayerSchema extends Schema {
 
 export class GameStateSchema extends Schema {
   @type("string") phase: string = "lobby";
-  @type("number") firstAt: number = 15;
+  @type("number") maxRounds: number = 10;
   @type("number") nbRound: number = 0;
   @type(QuestionSchema) currentQuestion: QuestionSchema = new QuestionSchema();
   @type({ map: PlayerSchema }) players = new MapSchema<PlayerSchema>();
