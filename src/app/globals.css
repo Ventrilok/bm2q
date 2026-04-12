@@ -38,4 +38,29 @@ body {
   .font-game {
     font-family: 'Special Elite', cursive;
   }
+  .scrollbar-hide {
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Safe area padding for notched devices */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
+  }
+  .safe-top {
+    padding-top: calc(env(safe-area-inset-top) + 0.75rem);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

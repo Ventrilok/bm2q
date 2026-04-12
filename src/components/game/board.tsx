@@ -81,7 +81,7 @@ export function GameBoard({
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       {/* Quit confirmation overlay */}
       {showQuitConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -113,7 +113,7 @@ export function GameBoard({
       )}
 
       {/* Top bar */}
-      <div className="flex items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+      <div className="flex items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3 safe-top">
         <button
           onClick={() => setShowQuitConfirm(true)}
           className="mr-1 rounded-md px-2 py-1 text-xs text-[var(--red)] transition-colors hover:bg-[var(--red)]/10"
@@ -152,7 +152,7 @@ export function GameBoard({
       <Leaderboard players={state.players} myId={myId} />
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col overflow-y-auto">
+      <div className="flex flex-1 flex-col">
         <AnimatePresence mode="wait">
           {/* PLAY PHASE */}
           {isPlay && (
@@ -172,8 +172,8 @@ export function GameBoard({
               </div>
 
               {/* Hand */}
-              <div className="flex-1 overflow-y-auto px-3 pb-24">
-                <div className="mx-auto grid max-w-4xl grid-cols-2 gap-2.5 md:grid-cols-4">
+              <div className="px-3 pb-48 safe-bottom">
+                <div className="mx-auto grid max-w-4xl grid-cols-2 gap-2.5 min-[480px]:grid-cols-3 md:grid-cols-4 lg:max-w-5xl lg:gap-3">
                   {me.hand.map((card, index) => {
                     const selectedIndex = me.selectedCards.findIndex(
                       (sc) => sc.uid === card.uid
@@ -196,24 +196,26 @@ export function GameBoard({
 
               {/* Bottom bar */}
               {!me.ready && (
-                <div className="fixed bottom-0 left-0 right-0 flex gap-3 border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3">
-                  <button
-                    onClick={onChangeHand}
-                    disabled={me.hasChangedCard || me.changeQuota <= 0}
-                    className="flex flex-1 flex-col items-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2.5 text-sm font-semibold text-[var(--text)] transition-all hover:border-[var(--accent)] disabled:opacity-40"
-                  >
-                    Changer
-                    <span className="text-[10px] text-[var(--text-muted)]">
-                      ({me.changeQuota} restant{me.changeQuota > 1 ? "s" : ""})
-                    </span>
-                  </button>
-                  <button
-                    onClick={onValidateChoice}
-                    disabled={!readyToValidate}
-                    className="flex-1 rounded-xl bg-[var(--green-dim)] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[var(--green)] disabled:opacity-40"
-                  >
-                    Valider
-                  </button>
+                <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3 safe-bottom">
+                  <div className="mx-auto flex max-w-xl gap-3">
+                    <button
+                      onClick={onChangeHand}
+                      disabled={me.hasChangedCard || me.changeQuota <= 0}
+                      className="flex flex-1 flex-col items-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2.5 text-sm font-semibold text-[var(--text)] transition-all hover:border-[var(--accent)] disabled:opacity-40"
+                    >
+                      Changer
+                      <span className="text-[10px] text-[var(--text-muted)]">
+                        ({me.changeQuota} restant{me.changeQuota > 1 ? "s" : ""})
+                      </span>
+                    </button>
+                    <button
+                      onClick={onValidateChoice}
+                      disabled={!readyToValidate}
+                      className="flex-1 rounded-xl bg-[var(--green-dim)] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[var(--green)] disabled:opacity-40"
+                    >
+                      Valider
+                    </button>
+                  </div>
                 </div>
               )}
             </motion.div>
@@ -238,8 +240,8 @@ export function GameBoard({
               </div>
 
               {/* Votable cards (others only) + pass */}
-              <div className="flex-1 overflow-y-auto px-4 pb-32">
-                <div className="mx-auto grid max-w-3xl grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="px-4 pb-44 safe-bottom">
+                <div className="mx-auto grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2 lg:max-w-5xl lg:grid-cols-3">
                   {votePlayerOrder
                     .filter((p) => !p.isMine)
                     .map(({ id, player }, index) => {
@@ -266,7 +268,7 @@ export function GameBoard({
 
                 {/* Pass button — in the voting area */}
                 {!me.hasVoted && (
-                  <div className="mx-auto mt-4 max-w-3xl">
+                  <div className="mx-auto mt-4 max-w-3xl lg:max-w-5xl">
                     <button
                       onClick={onVotePass}
                       className="w-full rounded-2xl border-2 border-dashed border-[var(--border)] px-5 py-4 text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--accent-dim)] hover:text-[var(--text)]"
@@ -285,11 +287,11 @@ export function GameBoard({
                   (c) => c.uid === state.goldenCardUid
                 );
                 return (
-                  <div className="fixed bottom-0 left-0 right-0 border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+                  <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3 safe-bottom">
                     <p className="mb-2 text-center text-[10px] uppercase tracking-widest text-[var(--text-muted)]">
                       Ta réponse
                     </p>
-                    <div className="mx-auto max-w-3xl opacity-60">
+                    <div className="mx-auto max-w-3xl opacity-60 lg:max-w-5xl">
                       <VoteCard
                         questionText={state.currentQuestion.text}
                         answers={myEntry.player.selectedCards}
@@ -334,8 +336,8 @@ export function GameBoard({
               </div>
 
               {/* All answers sorted by votes desc */}
-              <div className="flex-1 overflow-y-auto px-4 pb-6">
-                <div className="mx-auto flex max-w-3xl flex-col gap-3">
+              <div className="px-4 pb-6">
+                <div className="mx-auto grid max-w-3xl grid-cols-1 gap-3 md:max-w-4xl md:grid-cols-2 md:[&>*:first-child]:col-span-2">
                   {(() => {
                     const winnerSet = new Set(state.roundWinnerIds);
                     const recapPlayers = state.randomizedPlayersOrder
@@ -445,7 +447,7 @@ export function GameBoard({
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", delay: 0.2 }}
-                className="relative z-10 text-6xl"
+                className="relative z-10 text-6xl sm:text-7xl lg:text-8xl"
               >
                 👑
               </motion.div>
@@ -454,7 +456,7 @@ export function GameBoard({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="relative z-10 mt-4 font-game text-4xl text-[var(--yellow)]"
+                className="relative z-10 mt-4 font-game text-4xl text-[var(--yellow)] sm:text-5xl lg:text-6xl"
                 style={{ textShadow: "0 0 40px rgba(251,191,36,0.4)" }}
               >
                 {state.players.get(state.winnerId)?.name}
@@ -474,7 +476,7 @@ export function GameBoard({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
-                className="relative z-10 mt-8 w-full max-w-xs"
+                className="relative z-10 mt-8 w-full max-w-xs sm:max-w-sm lg:max-w-md"
               >
                 {sortedPlayers.map(([id, player], index) => (
                   <div

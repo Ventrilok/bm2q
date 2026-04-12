@@ -29,7 +29,7 @@ export function AnswerCard({
       whileHover={disabled ? {} : { y: -4, scale: 1.03 }}
       whileTap={disabled ? {} : { scale: 0.97 }}
       onClick={disabled ? undefined : onClick}
-      className={`relative flex min-h-[140px] cursor-pointer flex-col rounded-xl border-2 bg-[var(--card-white)] p-4 shadow-md transition-shadow ${
+      className={`relative flex min-h-[100px] cursor-pointer flex-col rounded-xl border-2 bg-[var(--card-white)] p-3 shadow-md transition-shadow min-[480px]:min-h-[120px] min-[480px]:p-4 md:min-h-[140px] md:p-5 ${
         selected
           ? "border-[var(--accent)] shadow-[0_8px_30px_rgba(192,132,252,0.3)]"
           : isGolden
