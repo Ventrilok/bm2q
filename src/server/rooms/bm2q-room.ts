@@ -1,18 +1,21 @@
 import { Room, Client } from "colyseus";
 import { randomBytes } from "crypto";
-import { nanoid } from "nanoid";
 import {
   GameStateSchema,
   PlayerSchema,
-  CardSchema,
   QuestionSchema,
 } from "../schema/game-state";
-import { ArraySchema } from "@colyseus/schema";
+
 import { NB_CARD_IN_HAND, CHANGE_QUOTA } from "../../types/game";
+import { createLogger } from "../logger";
 
 import questionsData from "../data/questions.json";
 import answersData from "../data/answers.json";
 import congratsData from "../data/congrats.json";
+
+const log = createLogger("BM2QRoom");
+
+const nanoid = (size = 21) => randomBytes(size).toString("base64url").slice(0, size);
 
 interface Card {
   uid: string;
@@ -45,7 +48,7 @@ function shuffleArray<T>(array: T[], tsSeed = 0): T[] {
   for (let i = shuffled.length - 1; i > 0; i--) {
     const cryptoRand = randomBytes(4).readUInt32BE(0);
     // XOR with a different slice of the timestamp at each position
-    const mixed = cryptoRand ^ ((tsSeed * (i + 1)) >>> 0);
+    const mixed = (cryptoRand ^ ((tsSeed * (i + 1)) >>> 0)) >>> 0;
     const j = mixed % (i + 1);
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
@@ -70,6 +73,18 @@ export class BM2QRoom extends Room<GameStateSchema> {
   private goldenCardPicked = false;
   maxClients = 8;
 
+  // Hands and selected cards live here — outside Schema — because
+  // @colyseus/schema v2 proxies break array operations on Schema objects.
+  private playerHands = new Map<string, Card[]>();
+  private playerSelected = new Map<string, Card[]>();
+
+  private getHand(id: string): Card[] {
+    return this.playerHands.get(id) ?? [];
+  }
+  private getSelected(id: string): Card[] {
+    return this.playerSelected.get(id) ?? [];
+  }
+
   onCreate(options: { roomCode?: string; maxRounds?: number }) {
     this.setState(new GameStateSchema());
     this.state.roomCode = options.roomCode || generateRoomCode();
@@ -84,6 +99,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
     // Set room metadata for lookup by code
     this.setMetadata({ roomCode: this.state.roomCode });
 
+    log.info(`Room created code=${this.state.roomCode} maxRounds=${this.state.maxRounds}`);
     this.registerMessageHandlers();
   }
 
@@ -95,6 +111,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
       if (this.state.players.size < 2) return;
 
       this.initializeDecks();
+      log.info(`Game started players=${this.state.players.size} qDeck=${this.questionDeck.length} aDeck=${this.answerDeck.length}`);
 
       // Pick congrats message
       const shuffledCongrats = shuffleArray(congratsData as string[]);
@@ -108,14 +125,14 @@ export class BM2QRoom extends Room<GameStateSchema> {
       if (client.sessionId !== this.state.hostId) return;
 
       // Reset all player state
-      this.state.players.forEach((player) => {
+      this.state.players.forEach((player, id) => {
         player.score = 0;
         player.ready = false;
         player.hasVoted = false;
         player.hasChangedCard = false;
         player.changeQuota = CHANGE_QUOTA;
-        player.selectedCards.clear();
-        player.hand.clear();
+        this.playerSelected.set(id, []);
+        this.playerHands.set(id, []);
       });
 
       this.state.nbRound = 0;
@@ -146,32 +163,31 @@ export class BM2QRoom extends Room<GameStateSchema> {
       if (!player || player.ready) return;
 
       const { uid } = data;
-      const handCard = player.hand.find((c) => c.uid === uid);
+      const hand = this.getHand(client.sessionId);
+      const handCard = hand.find((c) => c.uid === uid);
       if (!handCard) return;
 
-      const selectedIndex = player.selectedCards.findIndex(
-        (c) => c.uid === uid
-      );
+      const selected = [...this.getSelected(client.sessionId)];
+      const selectedIndex = selected.findIndex((c) => c.uid === uid);
       const pick = this.state.currentQuestion.pick;
 
-      if (player.selectedCards.length < pick) {
+      if (selected.length < pick) {
         if (selectedIndex === -1) {
-          const card = new CardSchema();
-          card.uid = handCard.uid;
-          card.text = handCard.text;
-          player.selectedCards.push(card);
+          selected.push({ uid: handCard.uid, text: handCard.text });
         } else {
-          player.selectedCards.splice(selectedIndex, 1);
+          selected.splice(selectedIndex, 1);
         }
       } else {
         // Already at pick limit, can only deselect
         if (selectedIndex !== -1) {
-          player.selectedCards.splice(selectedIndex, 1);
+          selected.splice(selectedIndex, 1);
         }
       }
+      this.playerSelected.set(client.sessionId, selected);
+
       // Send lightweight update to the acting client only
       client.send("player-update", {
-        selectedCards: player.selectedCards.map((c) => ({ uid: c.uid, text: c.text })),
+        selectedCards: selected.map((c) => ({ uid: c.uid, text: c.text })),
       });
     });
 
@@ -183,31 +199,30 @@ export class BM2QRoom extends Room<GameStateSchema> {
 
       player.hasChangedCard = true;
       player.changeQuota -= 1;
-      player.selectedCards.clear();
+      this.playerSelected.set(client.sessionId, []);
 
       // Replace all cards in hand
-      player.hand.clear();
+      const newHand: Card[] = [];
       for (let j = 0; j < NB_CARD_IN_HAND; j++) {
         const cardData = this.answerDeck.pop();
         if (cardData) {
-          const card = new CardSchema();
-          card.uid = cardData.uid;
-          card.text = cardData.text;
-          player.hand.push(card);
+          newHand.push(cardData);
         }
       }
+      this.playerHands.set(client.sessionId, newHand);
+
       // If the golden card was in this hand, re-pick from all hands
       if (this.state.goldenCardUid) {
         let goldenExists = false;
-        this.state.players.forEach((p) => {
-          p.hand.forEach((c) => {
+        this.playerHands.forEach((h) => {
+          h.forEach((c) => {
             if (c.uid === this.state.goldenCardUid) goldenExists = true;
           });
         });
         if (!goldenExists) {
           const allUids: string[] = [];
-          this.state.players.forEach((p) => {
-            p.hand.forEach((c) => allUids.push(c.uid));
+          this.playerHands.forEach((h) => {
+            h.forEach((c) => allUids.push(c.uid));
           });
           if (allUids.length > 0) {
             const idx = randomBytes(4).readUInt32BE(0) % allUids.length;
@@ -219,7 +234,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
 
       // Send lightweight update with new hand
       client.send("player-update", {
-        hand: player.hand.map((c) => ({ uid: c.uid, text: c.text })),
+        hand: newHand.map((c) => ({ uid: c.uid, text: c.text })),
         selectedCards: [],
         hasChangedCard: player.hasChangedCard,
         changeQuota: player.changeQuota,
@@ -233,7 +248,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
 
       // Only validate if correct number of cards selected
       if (
-        player.selectedCards.length !== this.state.currentQuestion.pick
+        this.getSelected(client.sessionId).length !== this.state.currentQuestion.pick
       ) {
         return;
       }
@@ -293,13 +308,15 @@ export class BM2QRoom extends Room<GameStateSchema> {
     player.avatarIndex = this.nextAvatarIndex++;
 
     this.state.players.set(client.sessionId, player);
+    this.playerHands.set(client.sessionId, []);
+    this.playerSelected.set(client.sessionId, []);
 
     // First player is the host
     if (this.state.players.size === 1) {
       this.state.hostId = client.sessionId;
     }
 
-    // Broadcast full state to all clients (so everyone sees the new player)
+    log.info(`Player joined name="${player.name}" id=${client.sessionId} total=${this.state.players.size}`);
     this.broadcastSync();
   }
 
@@ -307,11 +324,14 @@ export class BM2QRoom extends Room<GameStateSchema> {
     const player = this.state.players.get(client.sessionId);
     if (!player) return;
 
+    log.info(`Player left name="${player.name}" id=${client.sessionId} consented=${consented} phase=${this.state.phase}`);
     player.connected = false;
 
     if (this.state.phase === "lobby") {
       // In lobby, just remove the player
       this.state.players.delete(client.sessionId);
+      this.playerHands.delete(client.sessionId);
+      this.playerSelected.delete(client.sessionId);
       // Reassign host if needed
       if (
         client.sessionId === this.state.hostId &&
@@ -334,15 +354,16 @@ export class BM2QRoom extends Room<GameStateSchema> {
         // Allow 60 seconds for reconnection
         await this.allowReconnection(client, 60);
         player.connected = true;
-        // Send fresh state to the reconnected client and notify others.
+        log.info(`Player reconnected name="${player.name}" id=${client.sessionId}`);
         this.broadcastSync();
       }
     } catch {
-      // Reconnection timed out — game continues without this player.
+      log.warn(`Reconnection timed out for name="${player.name}" id=${client.sessionId}`);
     }
   }
 
   private initializeDecks() {
+    log.debug(`Initializing decks...`);
     const tsSeed = Date.now();
     const recentSet = new Set(globalRecentQuestions);
 
@@ -372,6 +393,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
       })),
       tsSeed
     );
+    log.info(`Decks initialized questions=${this.questionDeck.length} (fresh=${freshQuestions.length} stale=${staleQuestions.length}) answers=${this.answerDeck.length}`);
   }
 
   private refillDecksForRematch() {
@@ -411,9 +433,15 @@ export class BM2QRoom extends Room<GameStateSchema> {
     this.state.phase = "ready";
 
     // Pop next question and track it as used (both locally and globally)
-    const question = this.questionDeck.pop()!;
+    const question = this.questionDeck.pop();
+    if (!question) {
+      log.error(`Question deck empty after length check — should not happen`);
+      this.transitionToGameover();
+      return;
+    }
     this.usedQuestions.push(question);
     recordUsedQuestion(question.text);
+    log.info(`Round ${this.state.nbRound} question="${question.text.slice(0, 60)}..." pick=${question.pick} qDeckLeft=${this.questionDeck.length}`);
     this.state.currentQuestion.text = question.text;
     this.state.currentQuestion.pick =
       typeof question.pick === "string"
@@ -421,23 +449,16 @@ export class BM2QRoom extends Room<GameStateSchema> {
         : question.pick;
 
     // For each player: remove played cards, deal new ones
-    this.state.players.forEach((player) => {
+    this.state.players.forEach((player, id) => {
       // Remove previously selected cards from hand
-      if (player.selectedCards.length > 0) {
-        const selectedUids = new Set(
-          player.selectedCards.map((c) => c.uid)
-        );
-        const remainingHand: CardSchema[] = [];
-        player.hand.forEach((card) => {
-          if (!selectedUids.has(card.uid)) {
-            remainingHand.push(card);
-          }
-        });
-        player.hand.clear();
-        remainingHand.forEach((card) => player.hand.push(card));
+      const selected = this.getSelected(id);
+      let hand = this.getHand(id);
+      if (selected.length > 0) {
+        const selectedUids = new Set(selected.map((c) => c.uid));
+        hand = hand.filter((card) => !selectedUids.has(card.uid));
       }
 
-      player.selectedCards.clear();
+      this.playerSelected.set(id, []);
       player.hasVoted = false;
 
       // Reset change card if quota remains
@@ -446,14 +467,13 @@ export class BM2QRoom extends Room<GameStateSchema> {
       }
 
       // Fill hand to NB_CARD_IN_HAND
-      while (player.hand.length < NB_CARD_IN_HAND) {
+      while (hand.length < NB_CARD_IN_HAND) {
         const cardData = this.answerDeck.pop();
         if (!cardData) break;
-        const card = new CardSchema();
-        card.uid = cardData.uid;
-        card.text = cardData.text;
-        player.hand.push(card);
+        hand.push(cardData);
       }
+      this.playerHands.set(id, hand);
+      log.debug(`Dealt cards player="${player.name}" hand=${hand.length} aDeckLeft=${this.answerDeck.length}`);
 
       player.ready = true;
     });
@@ -462,8 +482,8 @@ export class BM2QRoom extends Room<GameStateSchema> {
     if (!this.goldenCardPicked) {
       this.goldenCardPicked = true;
       const allCardUids: string[] = [];
-      this.state.players.forEach((player) => {
-        player.hand.forEach((card) => allCardUids.push(card.uid));
+      this.playerHands.forEach((hand) => {
+        hand.forEach((card) => allCardUids.push(card.uid));
       });
       if (allCardUids.length > 0) {
         const randIndex = randomBytes(4).readUInt32BE(0) % allCardUids.length;
@@ -479,19 +499,21 @@ export class BM2QRoom extends Room<GameStateSchema> {
     }, 1500);
   }
 
-  private serializePlayer(player: PlayerSchema, forClientId?: string) {
+  private serializePlayer(playerId: string, player: PlayerSchema, forClientId?: string) {
+    const hand = this.getHand(playerId);
+    const selected = this.getSelected(playerId);
     return {
       id: player.id,
       name: player.name,
       ready: player.ready,
       score: player.score,
-      selectedCards: player.selectedCards.map((c) => ({ uid: c.uid, text: c.text })),
+      selectedCards: selected.map((c) => ({ uid: c.uid, text: c.text })),
       hasChangedCard: player.hasChangedCard,
       changeQuota: player.changeQuota,
       hasVoted: player.hasVoted,
       // Only include hand for the owning player
-      hand: forClientId === player.id
-        ? player.hand.map((c) => ({ uid: c.uid, text: c.text }))
+      hand: forClientId === playerId
+        ? hand.map((c) => ({ uid: c.uid, text: c.text }))
         : [],
       connected: player.connected,
       avatarIndex: player.avatarIndex,
@@ -501,10 +523,10 @@ export class BM2QRoom extends Room<GameStateSchema> {
   private sendSyncToClient(client: Client) {
     const players: Record<string, any> = {};
     this.state.players.forEach((player, id) => {
-      players[id] = this.serializePlayer(player, client.sessionId);
+      players[id] = this.serializePlayer(id, player, client.sessionId);
     });
 
-    // During play phase and ready phase, hide other players' selected cards
+    // During play phase, hide other players' selected cards
     if (this.state.phase === "play") {
       for (const id of Object.keys(players)) {
         if (id !== client.sessionId) {
@@ -543,6 +565,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
   }
 
   private transitionToPlay() {
+    log.info(`Phase -> play round=${this.state.nbRound}`);
     this.state.phase = "play";
     this.state.players.forEach((player) => {
       player.ready = false;
@@ -551,6 +574,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
   }
 
   private transitionToVote() {
+    log.info(`Phase -> vote round=${this.state.nbRound}`);
     this.state.phase = "vote";
 
     // Randomize player order for display
@@ -569,6 +593,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
   }
 
   private transitionToRecap() {
+    log.info(`Phase -> recap round=${this.state.nbRound} votes=${this.roundVotes.size}`);
     // Tally votes per player
     const voteCounts = new Map<string, number>();
     this.state.players.forEach((_, id) => voteCounts.set(id, 0));
@@ -598,12 +623,13 @@ export class BM2QRoom extends Room<GameStateSchema> {
     this.state.roundWinnerIds.forEach((id) => winnerIdSet.add(id));
 
     winnerIdSet.forEach((id) => {
+      const selected = this.getSelected(id);
       const player = this.state.players.get(id);
       if (!player) return;
 
       let playedGolden = false;
       if (this.state.goldenCardUid) {
-        player.selectedCards.forEach((card) => {
+        selected.forEach((card) => {
           if (card.uid === this.state.goldenCardUid) playedGolden = true;
         });
       }
@@ -632,6 +658,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
   }
 
   private transitionToGameover() {
+    log.info(`Phase -> gameover after ${this.state.nbRound} rounds`);
     this.state.phase = "gameover";
 
     // Find winner

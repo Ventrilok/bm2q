@@ -1,5 +1,4 @@
-import { Schema, type, ArraySchema, MapSchema, filter } from "@colyseus/schema";
-import type { Client } from "colyseus";
+import { Schema, type, ArraySchema, MapSchema } from "@colyseus/schema";
 
 export class CardSchema extends Schema {
   @type("string") uid: string = "";
@@ -22,31 +21,9 @@ export class PlayerSchema extends Schema {
   @type("boolean") connected: boolean = true;
   @type("number") avatarIndex: number = 0;
 
-  @filter(function (
-    this: PlayerSchema,
-    client: Client,
-    value: ArraySchema<CardSchema>,
-    root: GameStateSchema
-  ) {
-    // Only send hand to the owning player
-    return client.sessionId === this.id;
-  })
-  @type([CardSchema])
-  hand = new ArraySchema<CardSchema>();
-
-  @filter(function (
-    this: PlayerSchema,
-    client: Client,
-    value: ArraySchema<CardSchema>,
-    root: GameStateSchema
-  ) {
-    // During play phase, only show to the owning player
-    // During vote and after, show to everyone
-    const phase = root.phase;
-    return phase !== "play" || client.sessionId === this.id;
-  })
-  @type([CardSchema])
-  selectedCards = new ArraySchema<CardSchema>();
+  // hand and selectedCards are stored in room-level Maps (not on Schema)
+  // because @colyseus/schema v2 proxies break array operations even on
+  // non-decorated properties.
 }
 
 export class GameStateSchema extends Schema {
