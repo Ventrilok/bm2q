@@ -19,8 +19,9 @@ Players complete fill-in-the-blank statements using offensive, absurd, or politi
 ## Tech Stack
 
 - **Frontend**: Next.js 15, React 19, Tailwind CSS, Framer Motion
-- **Backend**: Colyseus (real-time multiplayer framework), Express
+- **Game server**: Colyseus 0.15 (real-time multiplayer over WebSocket)
 - **Language**: TypeScript (full stack)
+- **Runtime**: a single Node.js process serves both the website and the game on one port
 - **Deployment**: Docker / Docker Compose
 
 ## How to Play
@@ -41,14 +42,13 @@ Players complete fill-in-the-blank statements using offensive, absurd, or politi
 - **Vote Pass**: Skip voting if no answer makes you laugh
 - **Rematch**: Host can restart with the same players after game over
 - **Player Avatars**: Each player gets a persistent color + emoji avatar
-- **Reconnection**: Players can reconnect within 60 seconds if disconnected mid-game
 - **Change Hand**: Swap your entire hand once per round (limited uses)
 
 ## Installation
 
 ### Prerequisites
 
-- **Node.js** (v18+)
+- **Node.js** 22+
 
 ### Setup
 
@@ -66,30 +66,56 @@ npm install
 npm run dev
 ```
 
-This starts both the Next.js frontend and Colyseus game server on a single port (default: 3000).
+Starts the website and the game server together, on a single port (default: 3000, override with `PORT`).
+
+### Production
+
+```bash
+npm run build
+NODE_ENV=production npm start
+```
+
+Same single process and port. `GET /healthz` returns `200 {"status":"ok"}` for health checks.
+
+Logs default to `info` in production and `debug` otherwise; set `LOG_LEVEL` (`debug`, `info`, `warn`, `error`) to override.
+
+Game state lives in memory: restarting the server ends every game in progress.
 
 ### Docker
 
 ```bash
-docker compose build
-docker compose up
+docker compose up -d --build
 ```
 
-The application will be accessible at `http://localhost:3000`.
+Runs one container on `http://localhost:3000`, restarted automatically unless stopped, with a health check on `/healthz`. The container runs as a non-root user.
+
+## Tests
+
+```bash
+npm test                                             # game tests (starts an in-process game server)
+npm run typecheck                                    # TypeScript checks
+SMOKE_URL=http://localhost:3000 npm run test:smoke   # against a running production server
+```
+
+Some tests in `tests/known-issues.test.ts` are marked `todo`: they describe known problems that are not fixed yet. CI (`.github/workflows/ci.yml`) runs all of the above and also builds and checks the Docker image.
 
 ## Project Structure
 
 ```
+server.ts           # Production entry: website + game server on one port
 src/
   server/           # Colyseus game server
     rooms/          # Game room logic (BM2QRoom)
     schema/         # Colyseus state schemas
     data/           # Game data (questions, answers, congrats)
+    index.ts        # Standalone game server (used by `npm run dev:split`)
   app/              # Next.js pages
     lobby/          # Room creation/joining + game board
   components/game/  # Game UI components
   lib/              # Client hooks and utilities
   types/            # Shared TypeScript types
+tests/              # Game tests and production smoke test
+docs/mockups/       # Design mockups (HTML)
 ```
 
 ## Customizing Game Content
