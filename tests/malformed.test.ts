@@ -1,4 +1,5 @@
 import { describe, it, before, after } from "node:test";
+import assert from "node:assert/strict";
 import {
   startServer,
   setupGame,
@@ -9,9 +10,8 @@ import {
 } from "./helpers";
 
 // A malformed message during a round used to crash the whole server process
-// (every live game lost). Skipped until message validation lands, because a
-// crash takes this test file down with it.
-describe("malformed messages", { skip: "crashes the server until messages are validated" }, () => {
+// (every live game lost).
+describe("malformed messages", () => {
   let server: TestServer;
   before(async () => {
     server = await startServer();
@@ -29,8 +29,10 @@ describe("malformed messages", { skip: "crashes the server until messages are va
     bots[0].room.send("vote-answer");
     bots[0].room.send("unknown-message", { x: 1 });
     await wait(200);
-    // The round can still be played normally.
+    // The sender is still in the game and the round can be played normally.
+    assert.ok(bots[0].room.connection.isOpen, "sender was disconnected");
     await playRound(bots);
+    assert.equal(bots[1].state!.players[bots[0].id].connected, true);
     await closeAll(bots);
   });
 });

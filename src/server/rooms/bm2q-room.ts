@@ -1,4 +1,4 @@
-import { Room, Client, ServerError } from "colyseus";
+import { Room, Client, ServerError, type Delayed } from "colyseus";
 import { randomBytes } from "crypto";
 import {
   GameStateSchema,
@@ -75,8 +75,46 @@ function generateRoomCode(): string {
 const READY_DELAY_MS = Number(process.env.BM2Q_READY_DELAY_MS ?? 1500);
 const RECAP_DELAY_MS = Number(process.env.BM2Q_RECAP_DELAY_MS ?? 4000);
 
+// How long a player who lost their connection mid-game keeps their seat
+// (and the host role). Read at use time so tests can shorten it.
+const DEFAULT_RECONNECT_SECONDS = 180;
+function reconnectSeconds(): number {
+  const value = Number(process.env.BM2Q_RECONNECT_SECONDS);
+  return Number.isFinite(value) && value > 0 ? value : DEFAULT_RECONNECT_SECONDS;
+}
+
+// Per-client message budget: anything beyond it within the window is dropped.
+const RATE_LIMIT_MAX_MESSAGES = 20;
+const RATE_LIMIT_WINDOW_MS = 1000;
+
+// Bounds for client-provided values.
+const MAX_ID_LENGTH = 64; // card uids are 10 chars, session ids 9
+export const MAX_NAME_LENGTH = 20;
+
 // Error messages sent to clients when joining is refused.
 export const JOIN_ERROR_GAME_STARTED = "GAME_STARTED";
+
+/**
+ * Cleans a player-provided name: control characters removed, trimmed, capped
+ * at MAX_NAME_LENGTH characters. Returns "" when nothing usable remains.
+ */
+export function sanitizePlayerName(raw: unknown): string {
+  if (typeof raw !== "string") return "";
+  const cleaned = raw.replace(/[\p{Cc}\u2028\u2029]/gu, "").trim();
+  // Cut by code point so an emoji is never split in half.
+  return Array.from(cleaned).slice(0, MAX_NAME_LENGTH).join("").trim();
+}
+
+/** Reads a bounded, non-empty string field from an untrusted message payload. */
+function readIdField(data: unknown, field: string): string | null {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) return null;
+  const value = (data as Record<string, unknown>)[field];
+  if (typeof value !== "string") return null;
+  if (value.length === 0 || value.length > MAX_ID_LENGTH) return null;
+  return value;
+}
+
+type Phase = "lobby" | "ready" | "play" | "vote" | "recap" | "gameover";
 
 export class BM2QRoom extends Room<GameStateSchema> {
   private questionDeck: Question[] = [];
@@ -86,6 +124,16 @@ export class BM2QRoom extends Room<GameStateSchema> {
   private roundVoteCounts = new Map<string, number>(); // playerId -> vote count
   private goldenCardPicked = false;
   maxClients = 8;
+
+  // The single pending delayed phase change (ready -> play, recap -> next).
+  // Cleared on every phase change so a stale timer can never fire.
+  private phaseTimer: Delayed | undefined;
+
+  // Players who left for good (consented leave or reconnection window expired).
+  private departedIds = new Set<string>();
+
+  // Message rate limiting, per session id.
+  private rateWindows = new Map<string, { start: number; count: number; warned: boolean }>();
 
   // Hands and selected cards live here — outside Schema — because
   // @colyseus/schema v2 proxies break array operations on Schema objects.
@@ -111,8 +159,9 @@ export class BM2QRoom extends Room<GameStateSchema> {
 
     // Store the max rounds (validated to allowed values)
     const allowedRounds = [5, 10, 15, 20];
-    if (options.maxRounds && allowedRounds.includes(options.maxRounds)) {
-      this.state.maxRounds = options.maxRounds;
+    const maxRounds = options?.maxRounds;
+    if (typeof maxRounds === "number" && allowedRounds.includes(maxRounds)) {
+      this.state.maxRounds = maxRounds;
     }
 
     // Set room metadata for lookup by code
@@ -124,8 +173,52 @@ export class BM2QRoom extends Room<GameStateSchema> {
 
   private nextAvatarIndex = 0;
 
+  /**
+   * Registers a message handler behind the rate limiter and a safety net:
+   * whatever a client sends, an exception is logged and never reaches the
+   * process (which would end every live game).
+   */
+  private handle(type: string, handler: (client: Client, data: unknown) => void) {
+    this.onMessage(type, (client: Client, data: unknown) => {
+      if (!this.allowMessage(client)) return;
+      this.safely(`message "${type}" from ${client.sessionId}`, () => handler(client, data));
+    });
+  }
+
+  private safely(context: string, action: () => void) {
+    try {
+      action();
+    } catch (err) {
+      log.error(`Unexpected error in ${context}: ${err instanceof Error ? err.stack ?? err.message : String(err)}`);
+    }
+  }
+
+  /** Fixed-window per-client limit; extra messages are dropped, not punished. */
+  private allowMessage(client: Client): boolean {
+    const now = Date.now();
+    let window = this.rateWindows.get(client.sessionId);
+    if (!window || now - window.start >= RATE_LIMIT_WINDOW_MS) {
+      window = { start: now, count: 0, warned: false };
+      this.rateWindows.set(client.sessionId, window);
+    }
+    window.count += 1;
+    if (window.count <= RATE_LIMIT_MAX_MESSAGES) return true;
+    if (!window.warned) {
+      window.warned = true;
+      log.warn(`Rate limit exceeded id=${client.sessionId} (>${RATE_LIMIT_MAX_MESSAGES} msg/${RATE_LIMIT_WINDOW_MS}ms), dropping messages`);
+    }
+    return false;
+  }
+
   private registerMessageHandlers() {
-    this.onMessage("start-game", (client) => {
+    // Unknown message types: ignore. Without this, Colyseus disconnects the sender.
+    this.onMessage("*", (client: Client, type: string | number) => {
+      if (!this.allowMessage(client)) return;
+      log.debug(`Ignored unknown message type="${String(type).slice(0, 40)}" id=${client.sessionId}`);
+    });
+
+    this.handle("start-game", (client) => {
+      if (this.state.phase !== "lobby") return;
       if (client.sessionId !== this.state.hostId) return;
       if (this.state.players.size < 2) return;
 
@@ -139,7 +232,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
       this.transitionToReady();
     });
 
-    this.onMessage("rematch", (client) => {
+    this.handle("rematch", (client) => {
       if (this.state.phase !== "gameover") return;
       if (client.sessionId !== this.state.hostId) return;
 
@@ -168,7 +261,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
       this.transitionToReady();
     });
 
-    this.onMessage("player-ready", (client) => {
+    this.handle("player-ready", (client) => {
       if (this.state.phase !== "ready") return;
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
@@ -176,12 +269,13 @@ export class BM2QRoom extends Room<GameStateSchema> {
       this.checkPhaseAdvance();
     });
 
-    this.onMessage("play-card", (client, data: { uid: string }) => {
+    this.handle("play-card", (client, data) => {
       if (this.state.phase !== "play") return;
       const player = this.state.players.get(client.sessionId);
       if (!player || player.ready) return;
 
-      const { uid } = data;
+      const uid = readIdField(data, "uid");
+      if (uid === null) return;
       const hand = this.getHand(client.sessionId);
       const handCard = hand.find((c) => c.uid === uid);
       if (!handCard) return;
@@ -210,7 +304,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
       });
     });
 
-    this.onMessage("change-hand", (client) => {
+    this.handle("change-hand", (client) => {
       if (this.state.phase !== "play") return;
       const player = this.state.players.get(client.sessionId);
       if (!player || player.ready) return;
@@ -260,7 +354,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
       });
     });
 
-    this.onMessage("validate-choice", (client) => {
+    this.handle("validate-choice", (client) => {
       if (this.state.phase !== "play") return;
       const player = this.state.players.get(client.sessionId);
       if (!player || player.ready) return;
@@ -278,14 +372,15 @@ export class BM2QRoom extends Room<GameStateSchema> {
       this.checkPhaseAdvance();
     });
 
-    this.onMessage(
+    this.handle(
       "vote-answer",
-      (client, data: { targetId: string }) => {
+      (client, data) => {
         if (this.state.phase !== "vote") return;
         const player = this.state.players.get(client.sessionId);
         if (!player || player.hasVoted) return;
 
-        const { targetId } = data;
+        const targetId = readIdField(data, "targetId");
+        if (targetId === null) return;
 
         // Prevent self-voting
         if (targetId === client.sessionId) return;
@@ -301,7 +396,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
       }
     );
 
-    this.onMessage("vote-pass", (client) => {
+    this.handle("vote-pass", (client) => {
       if (this.state.phase !== "vote") return;
       const player = this.state.players.get(client.sessionId);
       if (!player || player.hasVoted) return;
@@ -327,10 +422,11 @@ export class BM2QRoom extends Room<GameStateSchema> {
     log.info(`Room disposed code=${this.roomId}`);
   }
 
-  onJoin(client: Client, options: { playerName?: string }) {
+  onJoin(client: Client, options: { playerName?: unknown }) {
     const player = new PlayerSchema();
     player.id = client.sessionId;
-    player.name = options.playerName || `Joueur ${this.state.players.size + 1}`;
+    player.name =
+      sanitizePlayerName(options?.playerName) || `Joueur ${this.state.players.size + 1}`;
     player.ready = false;
     player.score = 0;
     player.hasChangedCard = false;
@@ -353,44 +449,65 @@ export class BM2QRoom extends Room<GameStateSchema> {
   }
 
   async onLeave(client: Client, consented: boolean) {
-    const player = this.state.players.get(client.sessionId);
+    const id = client.sessionId;
+    this.rateWindows.delete(id);
+    const player = this.state.players.get(id);
     if (!player) return;
 
-    log.info(`Player left name="${player.name}" id=${client.sessionId} consented=${consented} phase=${this.state.phase}`);
+    log.info(`Player left name="${player.name}" id=${id} consented=${consented} phase=${this.state.phase}`);
     player.connected = false;
 
     if (this.state.phase === "lobby") {
       // In lobby, just remove the player
-      this.state.players.delete(client.sessionId);
-      this.playerHands.delete(client.sessionId);
-      this.playerSelected.delete(client.sessionId);
-      // Reassign host if needed
-      if (
-        client.sessionId === this.state.hostId &&
-        this.state.players.size > 0
-      ) {
-        const firstKey = this.state.players.keys().next().value;
-        if (firstKey) this.state.hostId = firstKey;
-      }
+      this.state.players.delete(id);
+      this.playerHands.delete(id);
+      this.playerSelected.delete(id);
+      if (id === this.state.hostId) this.reassignHost();
       this.broadcastSync();
       return;
     }
+
+    // A consented leave is final; otherwise the seat (and host role) is kept
+    // for the reconnection window.
+    if (consented) this.markDeparted(id);
 
     // Notify clients of the disconnection and unblock the phase if all
     // remaining connected players have already acted.
     this.broadcastSync();
     this.checkPhaseAdvance();
 
+    if (consented) return;
+
     try {
-      if (!consented) {
-        // Allow 60 seconds for reconnection
-        await this.allowReconnection(client, 60);
-        player.connected = true;
-        log.info(`Player reconnected name="${player.name}" id=${client.sessionId}`);
-        this.broadcastSync();
-      }
+      await this.allowReconnection(client, reconnectSeconds());
+      player.connected = true;
+      // The host left for good while nobody else was connected: take over.
+      if (this.departedIds.has(this.state.hostId)) this.state.hostId = id;
+      log.info(`Player reconnected name="${player.name}" id=${id}`);
+      this.broadcastSync();
     } catch {
-      log.warn(`Reconnection timed out for name="${player.name}" id=${client.sessionId}`);
+      log.warn(`Reconnection timed out for name="${player.name}" id=${id}`);
+      this.markDeparted(id);
+      this.broadcastSync();
+    }
+  }
+
+  /** Records a definitive departure and hands the host role over if needed. */
+  private markDeparted(id: string) {
+    this.departedIds.add(id);
+    if (id === this.state.hostId) this.reassignHost();
+  }
+
+  /** Makes the first still-connected player the host (join order). */
+  private reassignHost() {
+    let newHostId = "";
+    this.state.players.forEach((player, id) => {
+      if (!newHostId && player.connected && !this.departedIds.has(id)) newHostId = id;
+    });
+    if (!newHostId) return; // nobody connected; the next one to reconnect takes it
+    if (newHostId !== this.state.hostId) {
+      log.info(`Host reassigned from=${this.state.hostId} to=${newHostId}`);
+      this.state.hostId = newHostId;
     }
   }
 
@@ -455,22 +572,55 @@ export class BM2QRoom extends Room<GameStateSchema> {
     }
   }
 
+  // ---- Phase transitions -------------------------------------------------
+  // Each transition only runs from the phase(s) it expects, cancels any
+  // pending delayed transition, and schedules its own delayed follow-up
+  // through schedulePhase(), which re-checks phase and round when it fires.
+
+  private isPhase(...phases: Phase[]): boolean {
+    return phases.includes(this.state.phase as Phase);
+  }
+
+  private enterPhase(phase: Phase) {
+    this.clearPhaseTimer();
+    this.state.phase = phase;
+  }
+
+  private clearPhaseTimer() {
+    this.phaseTimer?.clear();
+    this.phaseTimer = undefined;
+  }
+
+  private schedulePhase(from: Phase, delayMs: number, action: () => void) {
+    this.clearPhaseTimer();
+    const round = this.state.nbRound;
+    const timer = this.clock.setTimeout(() => {
+      if (this.phaseTimer === timer) this.phaseTimer = undefined;
+      if (this.state.phase !== from || this.state.nbRound !== round) {
+        log.warn(`Stale timer ignored expected=${from}/${round} actual=${this.state.phase}/${this.state.nbRound}`);
+        return;
+      }
+      this.safely(`timer after ${from}`, action);
+    }, delayMs);
+    this.phaseTimer = timer;
+  }
+
   private transitionToReady() {
-    if (this.questionDeck.length === 0) {
+    if (!this.isPhase("lobby", "recap", "gameover")) {
+      log.warn(`Ignored transition to ready from phase=${this.state.phase}`);
+      return;
+    }
+
+    // Pop next question and track it as used (both locally and globally)
+    const question = this.questionDeck.pop();
+    if (!question) {
       this.transitionToGameover();
       return;
     }
 
     this.state.nbRound += 1;
-    this.state.phase = "ready";
+    this.enterPhase("ready");
 
-    // Pop next question and track it as used (both locally and globally)
-    const question = this.questionDeck.pop();
-    if (!question) {
-      log.error(`Question deck empty after length check — should not happen`);
-      this.transitionToGameover();
-      return;
-    }
     this.usedQuestions.push(question);
     recordUsedQuestion(question.text);
     log.info(`Round ${this.state.nbRound} question="${question.text.slice(0, 60)}..." pick=${question.pick} qDeckLeft=${this.questionDeck.length}`);
@@ -526,9 +676,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
     this.broadcastSync();
 
     // Auto-advance to play after a short delay (let clients see the question)
-    this.clock.setTimeout(() => {
-      this.transitionToPlay();
-    }, READY_DELAY_MS);
+    this.schedulePhase("ready", READY_DELAY_MS, () => this.transitionToPlay());
   }
 
   private serializePlayer(playerId: string, player: PlayerSchema, forClientId?: string) {
@@ -597,8 +745,9 @@ export class BM2QRoom extends Room<GameStateSchema> {
   }
 
   private transitionToPlay() {
+    if (!this.isPhase("ready")) return;
     log.info(`Phase -> play round=${this.state.nbRound}`);
-    this.state.phase = "play";
+    this.enterPhase("play");
     this.state.players.forEach((player) => {
       player.ready = false;
     });
@@ -606,8 +755,9 @@ export class BM2QRoom extends Room<GameStateSchema> {
   }
 
   private transitionToVote() {
+    if (!this.isPhase("play")) return;
     log.info(`Phase -> vote round=${this.state.nbRound}`);
-    this.state.phase = "vote";
+    this.enterPhase("vote");
 
     // Randomize player order for display
     const playerIds = Array.from(this.state.players.keys());
@@ -625,6 +775,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
   }
 
   private transitionToRecap() {
+    if (!this.isPhase("vote")) return;
     log.info(`Phase -> recap round=${this.state.nbRound} votes=${this.roundVotes.size}`);
     // Tally votes per player
     const voteCounts = new Map<string, number>();
@@ -671,14 +822,14 @@ export class BM2QRoom extends Room<GameStateSchema> {
     // Store vote counts for client display
     this.roundVoteCounts = voteCounts;
 
-    this.state.phase = "recap";
+    this.enterPhase("recap");
     this.broadcastSync();
 
     // Clear round votes
     this.roundVotes.clear();
 
-    // Auto-advance after 4 seconds
-    this.clock.setTimeout(() => {
+    // Auto-advance once players have seen the results
+    this.schedulePhase("recap", RECAP_DELAY_MS, () => {
       this.roundVoteCounts.clear();
 
       if (this.state.nbRound >= this.state.maxRounds) {
@@ -686,12 +837,17 @@ export class BM2QRoom extends Room<GameStateSchema> {
       } else {
         this.transitionToReady();
       }
-    }, RECAP_DELAY_MS);
+    });
   }
 
   private transitionToGameover() {
+    // From recap (last round played) or when no question is left to start a round.
+    if (!this.isPhase("lobby", "recap", "gameover")) {
+      log.warn(`Ignored transition to gameover from phase=${this.state.phase}`);
+      return;
+    }
     log.info(`Phase -> gameover after ${this.state.nbRound} rounds`);
-    this.state.phase = "gameover";
+    this.enterPhase("gameover");
 
     // Find winner
     let maxScore = 0;
@@ -723,13 +879,16 @@ export class BM2QRoom extends Room<GameStateSchema> {
     }
   }
 
+  // True when every connected player has acted (and at least one is connected,
+  // so a room where everyone dropped does not race through phases).
   private allPlayersReady(): boolean {
     let allReady = true;
+    let connected = 0;
     this.state.players.forEach((player) => {
-      if (player.connected && !player.ready) {
-        allReady = false;
-      }
+      if (!player.connected) return;
+      connected += 1;
+      if (!player.ready) allReady = false;
     });
-    return allReady;
+    return allReady && connected > 0;
   }
 }

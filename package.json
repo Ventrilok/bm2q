@@ -11,7 +11,7 @@
     "start": "node dist/server.js",
     "serve": "tsx src/server/index.ts",
     "lint": "next lint",
-    "test": "BM2Q_READY_DELAY_MS=400 BM2Q_RECAP_DELAY_MS=100 LOG_LEVEL=warn node --import tsx --test --test-concurrency=1 tests/*.test.ts",
+    "test": "BM2Q_READY_DELAY_MS=400 BM2Q_RECAP_DELAY_MS=100 BM2Q_RECONNECT_SECONDS=1 LOG_LEVEL=warn node --import tsx --test --test-concurrency=1 tests/*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json",
     "test:smoke": "LOG_LEVEL=warn node --import tsx --test tests/smoke/*.test.ts"
   },
