@@ -19,7 +19,7 @@ Players complete fill-in-the-blank statements using offensive, absurd, or politi
 ## Tech Stack
 
 - **Frontend**: Next.js 15, React 19, Tailwind CSS, Framer Motion
-- **Game server**: Colyseus 0.15 (real-time multiplayer over WebSocket)
+- **Game server**: Colyseus 0.18 (real-time multiplayer over WebSocket; `@colyseus/core` + `@colyseus/sdk` in the browser)
 - **Language**: TypeScript (full stack)
 - **Runtime**: a single Node.js process serves both the website and the game on one port
 - **Deployment**: Docker / Docker Compose

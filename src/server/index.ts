@@ -1,4 +1,4 @@
-import { Server } from "colyseus";
+import { Server } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { createServer } from "http";
 import { registerRooms } from "./game-server";

@@ -1,4 +1,4 @@
-import { Client } from "colyseus.js";
+import { Client } from "@colyseus/sdk";
 
 let client: Client | null = null;
 

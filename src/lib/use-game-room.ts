@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { Room } from "colyseus.js";
+import type { Room } from "@colyseus/sdk";
 import { getClient } from "./colyseus-client";
 
 export interface CardState {

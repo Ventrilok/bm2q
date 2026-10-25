@@ -1,6 +1,7 @@
 import { describe, it, before, after } from "node:test";
+import { matchMaker } from "@colyseus/core";
 import assert from "node:assert/strict";
-import { Client } from "colyseus.js";
+import { Client } from "@colyseus/sdk";
 import {
   startServer,
   createGame,
@@ -25,7 +26,7 @@ describe("joining a game by code", () => {
     const host = await createGame(server.url, "Host");
     const code = host.state!.roomCode;
     assert.match(code, /^[A-Z]{4}$/);
-    assert.equal(host.room.id, code);
+    assert.equal(host.room.roomId, code);
     const guest = await joinGame(server.url, code, "Guest");
     await host.waitFor((s) => Object.keys(s.players).length === 2, "2 players");
     await closeAll([host, guest]);
@@ -33,7 +34,7 @@ describe("joining a game by code", () => {
 
   it("does not list games publicly", async () => {
     const host = await createGame(server.url, "Host");
-    const rooms = await new Client(server.url).getAvailableRooms("bm2q");
+    const rooms = (await matchMaker.query({ name: "bm2q" })).filter((r) => !r.private);
     assert.deepEqual(rooms, []);
     await closeAll([host]);
   });

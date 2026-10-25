@@ -2,7 +2,7 @@
 // The test script sets a 1-second reconnection window.
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { Client } from "colyseus.js";
+import { Client } from "@colyseus/sdk";
 import {
   startServer,
   setupGame,

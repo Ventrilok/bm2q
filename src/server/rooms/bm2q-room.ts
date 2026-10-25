@@ -1,4 +1,4 @@
-import { Room, Client, ServerError, matchMaker, type Delayed } from "colyseus";
+import { Room, Client, ServerError, matchMaker, CloseCode, type Delayed } from "@colyseus/core";
 import { randomBytes } from "crypto";
 import {
   GameStateSchema,
@@ -68,7 +68,7 @@ function generateRoomCode(): string {
     }
     // Also check the matchmaker: a disposing room releases its code before
     // Colyseus has fully unregistered it.
-    if (!activeRoomCodes.has(code) && !matchMaker.getRoomById(code)) return code;
+    if (!activeRoomCodes.has(code) && !matchMaker.getLocalRoomById(code)) return code;
   }
   throw new ServerError(503, "NO_ROOM_CODE_AVAILABLE");
 }
@@ -122,7 +122,7 @@ function readIdField(data: unknown, field: string): string | null {
 
 type Phase = "lobby" | "ready" | "play" | "vote" | "recap" | "gameover";
 
-export class BM2QRoom extends Room<GameStateSchema> {
+export class BM2QRoom extends Room<{ state: GameStateSchema }> {
   private questionDeck: Question[] = [];
   private usedQuestions: Question[] = [];
   private answerDeck: Card[] = [];
@@ -454,7 +454,8 @@ export class BM2QRoom extends Room<GameStateSchema> {
     this.broadcastSync();
   }
 
-  async onLeave(client: Client, consented: boolean) {
+  async onLeave(client: Client, code?: number) {
+    const consented = code === CloseCode.CONSENTED;
     const id = client.sessionId;
     this.rateWindows.delete(id);
     const player = this.state.players.get(id);
