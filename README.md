@@ -19,7 +19,7 @@ Players complete fill-in-the-blank statements using offensive, absurd, or politi
 ## Tech Stack
 
 - **Frontend**: Next.js 15, React 19, Tailwind CSS, Framer Motion
-- **Game server**: Colyseus 0.15 (real-time multiplayer over WebSocket)
+- **Game server**: Colyseus 0.18 (real-time multiplayer over WebSocket; `@colyseus/core` + `@colyseus/sdk` in the browser)
 - **Language**: TypeScript (full stack)
 - **Runtime**: a single Node.js process serves both the website and the game on one port
 - **Deployment**: Docker / Docker Compose
@@ -42,6 +42,7 @@ Players complete fill-in-the-blank statements using offensive, absurd, or politi
 - **Vote Pass**: Skip voting if no answer makes you laugh
 - **Rematch**: Host can restart with the same players after game over
 - **Player Avatars**: Each player gets a persistent color + emoji avatar
+- **Reconnection**: A dropped connection (network loss, locked phone) or a page refresh gets the player their seat back within 3 minutes
 - **Change Hand**: Swap your entire hand once per round (limited uses)
 
 ## Installation

@@ -1,4 +1,4 @@
-import type { Server } from "colyseus";
+import type { Server } from "@colyseus/core";
 import { BM2QRoom } from "./rooms/bm2q-room";
 
 // Single place where game rooms are registered, shared by the production

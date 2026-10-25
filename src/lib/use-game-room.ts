@@ -1,8 +1,40 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { Room } from "colyseus.js";
+import { CloseCode, type Room } from "@colyseus/sdk";
 import { getClient } from "./colyseus-client";
+
+export const SEAT_EXPIRED_MESSAGE = "Ta place dans la partie a expiré";
+
+// The seat survives a page refresh: the reconnection token is kept for this
+// browser tab only. It changes on every reconnection, so it is re-saved on
+// each state sync.
+const SESSION_KEY = "bm2q:reconnection-token";
+
+function saveToken(token: string | undefined) {
+  try {
+    if (token) sessionStorage.setItem(SESSION_KEY, token);
+  } catch {}
+}
+function loadToken(): string | null {
+  try {
+    return sessionStorage.getItem(SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
+function clearToken() {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {}
+}
+
+// Automatic reconnection after a network drop or a locked phone: retry for
+// about 3 minutes, the time the server keeps the seat.
+function configureReconnection(room: Room) {
+  room.reconnection.maxRetries = 40;
+  room.reconnection.minUptime = 1000;
+}
 
 export interface CardState {
   uid: string;
@@ -50,6 +82,10 @@ interface UseGameRoomReturn {
   myId: string | null;
   error: string | null;
   connecting: boolean;
+  /** The connection dropped and the client is trying to get the seat back. */
+  connectionLost: boolean;
+  /** A previous seat is being restored after a page load. */
+  restoring: boolean;
   createRoom: (playerName: string, maxRounds?: number) => Promise<void>;
   joinRoom: (roomCode: string, playerName: string) => Promise<void>;
   startGame: () => void;
@@ -117,16 +153,31 @@ export function useGameRoom(): UseGameRoomReturn {
   const [myId, setMyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [connectionLost, setConnectionLost] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const roomRef = useRef<Room | null>(null);
+  const restoreAttempted = useRef(false);
+
+  const resetRoom = useCallback(() => {
+    roomRef.current = null;
+    setRoom(null);
+    setState(null);
+    setMyId(null);
+    setConnectionLost(false);
+  }, []);
 
   const setupRoom = useCallback((newRoom: Room) => {
     roomRef.current = newRoom;
+    configureReconnection(newRoom);
     setRoom(newRoom);
     setMyId(newRoom.sessionId);
+    setConnectionLost(false);
+    saveToken(newRoom.reconnectionToken);
 
     // Full state sync from server
     newRoom.onMessage("sync-state", (data: any) => {
       setState(parseSyncState(data));
+      saveToken(newRoom.reconnectionToken);
     });
 
     // Lightweight partial update for own player (play-card, change-hand)
@@ -148,12 +199,35 @@ export function useGameRoom(): UseGameRoomReturn {
       setError(message || `Error ${code}`);
     });
 
+    newRoom.onDrop(() => setConnectionLost(true));
+    newRoom.onReconnect(() => setConnectionLost(false));
+
     newRoom.onLeave((code) => {
-      if (code > 1000) {
-        setError("Disconnected from server");
-      }
+      if (roomRef.current !== newRoom) return; // already left on purpose
+      if (code === CloseCode.CONSENTED) return;
+      // Reconnection gave up, or the server no longer holds the seat.
+      clearToken();
+      resetRoom();
+      setError(SEAT_EXPIRED_MESSAGE);
     });
-  }, []);
+  }, [resetRoom]);
+
+  // After a page refresh, take the previous seat back if there is one.
+  useEffect(() => {
+    if (restoreAttempted.current) return;
+    restoreAttempted.current = true;
+    const token = loadToken();
+    if (!token) return;
+    setRestoring(true);
+    getClient()
+      .reconnect(token)
+      .then((restored) => setupRoom(restored))
+      .catch(() => {
+        clearToken();
+        setError(SEAT_EXPIRED_MESSAGE);
+      })
+      .finally(() => setRestoring(false));
+  }, [setupRoom]);
 
   const createRoom = useCallback(
     async (playerName: string, maxRounds?: number) => {
@@ -227,16 +301,18 @@ export function useGameRoom(): UseGameRoomReturn {
   }, []);
 
   const leaveRoom = useCallback(() => {
-    roomRef.current?.leave();
-    roomRef.current = null;
-    setRoom(null);
-    setState(null);
-    setMyId(null);
-  }, []);
+    const current = roomRef.current;
+    clearToken();
+    resetRoom();
+    current?.leave();
+  }, [resetRoom]);
 
+  // Leaving the page within the app (not a refresh) gives the seat up.
   useEffect(() => {
     return () => {
-      roomRef.current?.leave();
+      if (!roomRef.current) return;
+      clearToken();
+      roomRef.current.leave();
     };
   }, []);
 
@@ -246,6 +322,8 @@ export function useGameRoom(): UseGameRoomReturn {
     myId,
     error,
     connecting,
+    connectionLost,
+    restoring,
     createRoom,
     joinRoom,
     startGame,

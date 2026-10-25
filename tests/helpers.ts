@@ -2,9 +2,9 @@
 // automated players ("bots") through the same client library as the app.
 import { createServer, type Server as HttpServer } from "http";
 import type { AddressInfo } from "net";
-import { Server } from "colyseus";
+import { Server } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
-import { Client, type Room } from "colyseus.js";
+import { Client, type Room } from "@colyseus/sdk";
 import { registerRooms } from "../src/server/game-server";
 
 export interface TestServer {
@@ -125,6 +125,8 @@ export class Bot {
   }
 
   leave(consented = true) {
+    // A non-consented leave simulates a lost connection: stop the SDK from healing it.
+    if (!consented) this.room.reconnection.enabled = false;
     return this.room.leave(consented);
   }
 }

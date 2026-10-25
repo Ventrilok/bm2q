@@ -1,4 +1,4 @@
-import { Room, Client, ServerError, matchMaker, type Delayed } from "colyseus";
+import { Room, Client, ServerError, matchMaker, CloseCode, type Delayed } from "@colyseus/core";
 import { randomBytes } from "crypto";
 import {
   GameStateSchema,
@@ -68,7 +68,7 @@ function generateRoomCode(): string {
     }
     // Also check the matchmaker: a disposing room releases its code before
     // Colyseus has fully unregistered it.
-    if (!activeRoomCodes.has(code) && !matchMaker.getRoomById(code)) return code;
+    if (!activeRoomCodes.has(code) && !matchMaker.getLocalRoomById(code)) return code;
   }
   throw new ServerError(503, "NO_ROOM_CODE_AVAILABLE");
 }
@@ -122,7 +122,7 @@ function readIdField(data: unknown, field: string): string | null {
 
 type Phase = "lobby" | "ready" | "play" | "vote" | "recap" | "gameover";
 
-export class BM2QRoom extends Room<GameStateSchema> {
+export class BM2QRoom extends Room<{ state: GameStateSchema }> {
   private questionDeck: Question[] = [];
   private usedQuestions: Question[] = [];
   private answerDeck: Card[] = [];
@@ -223,7 +223,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
     this.handle("start-game", (client) => {
       if (this.state.phase !== "lobby") return;
       if (client.sessionId !== this.state.hostId) return;
-      if (this.state.players.size < 2) return;
+      if (this.activePlayerCount() < 2) return;
 
       this.initializeDecks();
       log.info(`Game started players=${this.state.players.size} qDeck=${this.questionDeck.length} aDeck=${this.answerDeck.length}`);
@@ -454,7 +454,8 @@ export class BM2QRoom extends Room<GameStateSchema> {
     this.broadcastSync();
   }
 
-  async onLeave(client: Client, consented: boolean) {
+  async onLeave(client: Client, code?: number) {
+    const consented = code === CloseCode.CONSENTED;
     const id = client.sessionId;
     this.rateWindows.delete(id);
     const player = this.state.players.get(id);
@@ -463,20 +464,11 @@ export class BM2QRoom extends Room<GameStateSchema> {
     log.info(`Player left name="${player.name}" id=${id} consented=${consented} phase=${this.state.phase}`);
     player.connected = false;
 
-    if (this.state.phase === "lobby") {
-      // In lobby, just remove the player
-      this.state.players.delete(id);
-      this.playerHands.delete(id);
-      this.playerSelected.delete(id);
-      if (id === this.state.hostId) this.reassignHost();
-      this.broadcastSync();
-      return;
-    }
-
     // A consented leave is final; otherwise the seat is kept for the
-    // reconnection window. Either way the host role moves on right away, so
-    // the others are never stuck waiting for a host who may not come back.
-    if (consented) this.markDeparted(id);
+    // reconnection window (also in the lobby: a page refresh or a locked
+    // phone gets the seat back). Either way the host role moves on right
+    // away, so the others are never stuck waiting for a host.
+    if (consented) this.releaseSeat(id);
     else if (id === this.state.hostId) this.reassignHost();
 
     // Notify clients of the disconnection and unblock the phase if all
@@ -500,9 +492,24 @@ export class BM2QRoom extends Room<GameStateSchema> {
       this.checkPhaseAdvance();
     } catch {
       log.warn(`Reconnection timed out for name="${player.name}" id=${id}`);
-      this.markDeparted(id);
+      this.releaseSeat(id);
       this.broadcastSync();
       this.checkPhaseAdvance();
+    }
+  }
+
+  /**
+   * Final departure: in the lobby the player is simply removed; during a game
+   * they stay listed (scores) but are marked as gone.
+   */
+  private releaseSeat(id: string) {
+    if (this.state.phase === "lobby") {
+      this.state.players.delete(id);
+      this.playerHands.delete(id);
+      this.playerSelected.delete(id);
+      if (id === this.state.hostId) this.reassignHost();
+    } else {
+      this.markDeparted(id);
     }
   }
 

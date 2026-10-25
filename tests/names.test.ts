@@ -1,6 +1,6 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { Client } from "colyseus.js";
+import { Client } from "@colyseus/sdk";
 import { sanitizePlayerName } from "../src/server/rooms/bm2q-room";
 import { startServer, createGame, joinGame, closeAll, Bot, type TestServer } from "./helpers";
 

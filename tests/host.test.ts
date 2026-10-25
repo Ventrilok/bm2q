@@ -2,7 +2,7 @@
 // reconnection window (BM2Q_RECONNECT_SECONDS=1) instead of 180 seconds.
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { Client } from "colyseus.js";
+import { Client } from "@colyseus/sdk";
 import {
   startServer,
   setupGame,
