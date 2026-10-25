@@ -240,6 +240,16 @@ export class BM2QRoom extends Room<{ state: GameStateSchema }> {
       if (client.sessionId !== this.state.hostId) return;
       if (this.activePlayerCount() < 2) return;
 
+      // Players who left for good stay listed until the end of the game (so
+      // the final scores make sense), then are removed for the rematch.
+      // Players still within their reconnection window keep their seat.
+      this.departedIds.forEach((id) => {
+        this.state.players.delete(id);
+        this.playerHands.delete(id);
+        this.playerSelected.delete(id);
+      });
+      this.departedIds.clear();
+
       // Reset all player state
       this.state.players.forEach((player, id) => {
         player.score = 0;
