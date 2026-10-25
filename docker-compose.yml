@@ -1,27 +1,18 @@
 services:
-  backend:
+  bm2q:
     build: .
-    command: ["npx", "tsx", "src/server/index.ts"]
-    ports:
-      - "2567:2567"
-    environment:
-      - NODE_ENV=production
-      - COLYSEUS_PORT=2567
-    networks:
-      - app-network
-
-  frontend:
-    build: .
-    command: ["npm", "run", "start"]
+    image: bm2q
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-    depends_on:
-      - backend
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
+      - PORT=3000
+      # - LOG_LEVEL=debug
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/healthz > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      start_interval: 2s
+      retries: 3

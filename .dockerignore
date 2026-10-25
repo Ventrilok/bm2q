@@ -1,0 +1,30 @@
+# Dependencies and build output (rebuilt inside the image)
+node_modules
+.next
+dist
+out
+build
+coverage
+*.tsbuildinfo
+next-env.d.ts
+
+# VCS, tooling, CI
+.git
+.github
+.claude
+.vscode
+.idea
+.DS_Store
+
+# Logs and local env
+*.log
+.env*
+
+# Not needed in the image
+docs
+tests
+README.md
+start.sh
+Dockerfile
+docker-compose.yml
+.dockerignore
