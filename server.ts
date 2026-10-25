@@ -12,6 +12,14 @@ const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
+    // Liveness probe for Docker / load balancers
+    const path = req.url?.split("?")[0];
+    if (path === "/healthz" && (req.method === "GET" || req.method === "HEAD")) {
+      res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+      res.end(req.method === "HEAD" ? undefined : JSON.stringify({ status: "ok" }));
+      return;
+    }
+
     handle(req, res);
   });
 
