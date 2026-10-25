@@ -5,12 +5,35 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameRoom } from "@/lib/use-game-room";
 import { getAvatar } from "@/lib/avatars";
+import { ConnectionLostOverlay } from "@/components/game/connection-lost";
 
 const GameBoard = lazy(() =>
   import("@/components/game/board").then((m) => ({ default: m.GameBoard }))
 );
 
+type GameRoom = ReturnType<typeof useGameRoom>;
+
 function LobbyContent() {
+  const game = useGameRoom();
+
+  // A previous seat is being restored after a page refresh.
+  if (game.restoring) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="font-game text-xl text-white">Chargement...</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {game.connectionLost && <ConnectionLostOverlay />}
+      <LobbyScreens game={game} />
+    </>
+  );
+}
+
+function LobbyScreens({ game }: { game: GameRoom }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const playerName = searchParams.get("name") || "Joueur";
@@ -31,7 +54,7 @@ function LobbyContent() {
     votePass,
     playerReady,
     rematch,
-  } = useGameRoom();
+  } = game;
 
   const [roomCode, setRoomCode] = useState(["", "", "", ""]);
   const [mode, setMode] = useState<"choose" | "lobby">("choose");

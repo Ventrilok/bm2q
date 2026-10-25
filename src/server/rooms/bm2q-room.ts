@@ -223,7 +223,7 @@ export class BM2QRoom extends Room<{ state: GameStateSchema }> {
     this.handle("start-game", (client) => {
       if (this.state.phase !== "lobby") return;
       if (client.sessionId !== this.state.hostId) return;
-      if (this.state.players.size < 2) return;
+      if (this.activePlayerCount() < 2) return;
 
       this.initializeDecks();
       log.info(`Game started players=${this.state.players.size} qDeck=${this.questionDeck.length} aDeck=${this.answerDeck.length}`);
@@ -464,20 +464,11 @@ export class BM2QRoom extends Room<{ state: GameStateSchema }> {
     log.info(`Player left name="${player.name}" id=${id} consented=${consented} phase=${this.state.phase}`);
     player.connected = false;
 
-    if (this.state.phase === "lobby") {
-      // In lobby, just remove the player
-      this.state.players.delete(id);
-      this.playerHands.delete(id);
-      this.playerSelected.delete(id);
-      if (id === this.state.hostId) this.reassignHost();
-      this.broadcastSync();
-      return;
-    }
-
     // A consented leave is final; otherwise the seat is kept for the
-    // reconnection window. Either way the host role moves on right away, so
-    // the others are never stuck waiting for a host who may not come back.
-    if (consented) this.markDeparted(id);
+    // reconnection window (also in the lobby: a page refresh or a locked
+    // phone gets the seat back). Either way the host role moves on right
+    // away, so the others are never stuck waiting for a host.
+    if (consented) this.releaseSeat(id);
     else if (id === this.state.hostId) this.reassignHost();
 
     // Notify clients of the disconnection and unblock the phase if all
@@ -501,9 +492,24 @@ export class BM2QRoom extends Room<{ state: GameStateSchema }> {
       this.checkPhaseAdvance();
     } catch {
       log.warn(`Reconnection timed out for name="${player.name}" id=${id}`);
-      this.markDeparted(id);
+      this.releaseSeat(id);
       this.broadcastSync();
       this.checkPhaseAdvance();
+    }
+  }
+
+  /**
+   * Final departure: in the lobby the player is simply removed; during a game
+   * they stay listed (scores) but are marked as gone.
+   */
+  private releaseSeat(id: string) {
+    if (this.state.phase === "lobby") {
+      this.state.players.delete(id);
+      this.playerHands.delete(id);
+      this.playerSelected.delete(id);
+      if (id === this.state.hostId) this.reassignHost();
+    } else {
+      this.markDeparted(id);
     }
   }
 
