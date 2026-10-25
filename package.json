@@ -10,7 +10,10 @@
     "build": "next build && npx tsc -p tsconfig.server.json",
     "start": "node dist/server.js",
     "serve": "tsx src/server/index.ts",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "BM2Q_READY_DELAY_MS=400 BM2Q_RECAP_DELAY_MS=100 BM2Q_RECONNECT_SECONDS=1 LOG_LEVEL=warn node --import tsx --test --test-concurrency=1 tests/*.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json",
+    "test:smoke": "LOG_LEVEL=warn node --import tsx --test tests/smoke/*.test.ts"
   },
   "dependencies": {
     "@colyseus/schema": "^2.0.35",
@@ -22,7 +25,7 @@
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.468.0",
     "nanoid": "^3.3.11",
-    "next": "^15.5.18",
+    "next": "^15.5.28",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.2"

@@ -1,7 +1,7 @@
 import { Server } from "colyseus";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { createServer } from "http";
-import { BM2QRoom } from "./rooms/bm2q-room";
+import { registerRooms } from "./game-server";
 
 const port = Number(process.env.COLYSEUS_PORT) || 2567;
 
@@ -11,7 +11,7 @@ const server = new Server({
   }),
 });
 
-server.define("bm2q", BM2QRoom);
+registerRooms(server);
 
 server.listen(port).then(() => {
   console.log(`🎮 BM2Q Colyseus server running on ws://localhost:${port}`);

@@ -63,6 +63,14 @@ interface UseGameRoomReturn {
   rematch: () => void;
 }
 
+export function joinErrorMessage(serverMessage?: string): string {
+  const msg = serverMessage || "";
+  if (msg.includes("GAME_STARTED")) return "Partie déjà commencée";
+  if (msg.includes("is locked")) return "Partie complète";
+  if (msg.includes("not found") || msg.includes("disposed")) return "Partie introuvable";
+  return "Impossible de rejoindre la partie";
+}
+
 function parseSyncState(data: any): GameRoomState {
   const players = new Map<string, PlayerState>();
   if (data.players) {
@@ -171,24 +179,14 @@ export function useGameRoom(): UseGameRoomReturn {
       setConnecting(true);
       try {
         const client = getClient();
-        const rooms = await client.getAvailableRooms("bm2q");
-        const target = rooms.find(
-          (r) =>
-            r.metadata?.roomCode?.toUpperCase() === roomCode.toUpperCase()
-        );
-
-        if (!target) {
-          setError("Partie introuvable");
-          return;
-        }
-
-        const newRoom = await client.joinById(target.roomId, {
+        // The room code is the room id: the server looks it up directly.
+        const newRoom = await client.joinById(roomCode.toUpperCase(), {
           playerName,
         });
         setupRoom(newRoom);
       } catch (err: any) {
         console.error("Join room error:", err);
-        setError(err.message || "Failed to join room");
+        setError(joinErrorMessage(err?.message));
       } finally {
         setConnecting(false);
       }

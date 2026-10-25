@@ -16,7 +16,15 @@ const LEVEL_COLORS: Record<LogLevel, string> = {
 
 const RESET = "\x1b[0m";
 
-const minLevel: LogLevel = (process.env.LOG_LEVEL as LogLevel) || "debug";
+const DEFAULT_LEVEL: LogLevel =
+  process.env.NODE_ENV === "production" ? "info" : "debug";
+
+const envLevel = process.env.LOG_LEVEL as LogLevel | undefined;
+const minLevel: LogLevel =
+  envLevel && Object.hasOwn(LEVEL_PRIORITY, envLevel) ? envLevel : DEFAULT_LEVEL;
+
+// No ANSI colors when output is piped or collected (e.g. container logs)
+const useColor = Boolean(process.stdout.isTTY);
 
 function shouldLog(level: LogLevel): boolean {
   return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[minLevel];
@@ -35,8 +43,8 @@ function formatArgs(args: unknown[]): string {
 
 function log(level: LogLevel, scope: string, ...args: unknown[]) {
   if (!shouldLog(level)) return;
-  const color = LEVEL_COLORS[level];
-  const tag = `${color}[${level.toUpperCase()}]${RESET}`;
+  const label = `[${level.toUpperCase()}]`;
+  const tag = useColor ? `${LEVEL_COLORS[level]}${label}${RESET}` : label;
   const ts = formatTimestamp();
   const prefix = scope ? `[${scope}]` : "";
   console.log(`${ts} ${tag} ${prefix} ${formatArgs(args)}`);
