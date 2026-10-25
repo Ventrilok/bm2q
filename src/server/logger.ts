@@ -21,7 +21,7 @@ const DEFAULT_LEVEL: LogLevel =
 
 const envLevel = process.env.LOG_LEVEL as LogLevel | undefined;
 const minLevel: LogLevel =
-  envLevel && envLevel in LEVEL_PRIORITY ? envLevel : DEFAULT_LEVEL;
+  envLevel && Object.hasOwn(LEVEL_PRIORITY, envLevel) ? envLevel : DEFAULT_LEVEL;
 
 // No ANSI colors when output is piped or collected (e.g. container logs)
 const useColor = Boolean(process.stdout.isTTY);

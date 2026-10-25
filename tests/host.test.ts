@@ -8,7 +8,6 @@ import {
   setupGame,
   playRound,
   closeAll,
-  wait,
   Bot,
   type TestServer,
 } from "./helpers";
@@ -22,7 +21,7 @@ describe("host role", () => {
     await server.stop();
   });
 
-  it("stays with a host whose connection drops, then moves on when the reconnection window expires", async () => {
+  it("moves to the next player as soon as the host's connection drops", async () => {
     const bots = await setupGame(server.url, 3, { maxRounds: 5 });
     const [host, p2, p3] = bots;
     const hostId = host.id;
@@ -31,9 +30,6 @@ describe("host role", () => {
 
     await host.leave(false); // connection lost, not a deliberate leave
     await p2.waitFor((s) => !s.players[hostId].connected, "host shown disconnected");
-    assert.equal(p2.state!.hostId, hostId, "host kept during the reconnection window");
-
-    await p2.waitFor((s) => s.hostId !== hostId, "host reassigned", 3000);
     assert.equal(p2.state!.hostId, p2.id, "first still-connected player becomes host");
 
     // The game goes on and the new host can start a rematch.
@@ -44,7 +40,7 @@ describe("host role", () => {
     await closeAll([p2, p3]);
   });
 
-  it("a host who reconnects within the window is still host", async () => {
+  it("a former host who reconnects is a normal player", async () => {
     const bots = await setupGame(server.url, 2);
     const [host, p2] = bots;
     const hostId = host.id;
@@ -53,12 +49,11 @@ describe("host role", () => {
     await p2.waitForPhase("play");
 
     await host.leave(false);
-    await p2.waitFor((s) => !s.players[hostId].connected, "host shown disconnected");
+    await p2.waitFor((s) => s.hostId === p2.id, "p2 becomes host");
     const back = new Bot("P1 again", await new Client(server.url).reconnect(token));
-    await p2.waitFor((s) => s.players[hostId].connected, "host back");
-    await wait(1200); // past the original reconnection window
-    assert.equal(p2.state!.hostId, hostId);
+    await p2.waitFor((s) => s.players[hostId].connected, "former host back");
     assert.equal(back.id, hostId);
+    assert.equal(p2.state!.hostId, p2.id);
     await closeAll([back, p2]);
   });
 

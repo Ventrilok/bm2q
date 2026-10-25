@@ -97,7 +97,7 @@ npm run typecheck                                    # TypeScript checks
 SMOKE_URL=http://localhost:3000 npm run test:smoke   # against a running production server
 ```
 
-Some tests in `tests/known-issues.test.ts` are marked `todo`: they describe known problems that are not fixed yet. CI (`.github/workflows/ci.yml`) runs all of the above and also builds and checks the Docker image.
+`tests/known-issues.test.ts` guards against regressions of the problems found in the October 2026 review. CI (`.github/workflows/ci.yml`) runs all of the above and also builds and checks the Docker image.
 
 ## Project Structure
 

@@ -116,9 +116,11 @@ export class Bot {
     this.room.send("validate-choice");
   }
 
-  /** Vote for the first other player. */
+  /** Vote for the first other player who submitted an answer this round. */
   vote() {
-    const target = Object.keys(this.state!.players).find((id) => id !== this.id);
+    const target = Object.values(this.state!.players).find(
+      (p) => p.id !== this.id && p.selectedCards.length > 0
+    )?.id;
     this.room.send("vote-answer", { targetId: target });
   }
 

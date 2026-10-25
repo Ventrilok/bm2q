@@ -1,4 +1,4 @@
-import { Room, Client, ServerError, type Delayed } from "colyseus";
+import { Room, Client, ServerError, matchMaker, type Delayed } from "colyseus";
 import { randomBytes } from "crypto";
 import {
   GameStateSchema,
@@ -66,17 +66,23 @@ function generateRoomCode(): string {
     for (let i = 0; i < 4; i++) {
       code += ROOM_CODE_CHARS[randomBytes(1)[0] % ROOM_CODE_CHARS.length];
     }
-    if (!activeRoomCodes.has(code)) return code;
+    // Also check the matchmaker: a disposing room releases its code before
+    // Colyseus has fully unregistered it.
+    if (!activeRoomCodes.has(code) && !matchMaker.getRoomById(code)) return code;
   }
   throw new ServerError(503, "NO_ROOM_CODE_AVAILABLE");
 }
 
 // Phase delays, overridable so tests can run games quickly.
-const READY_DELAY_MS = Number(process.env.BM2Q_READY_DELAY_MS ?? 1500);
-const RECAP_DELAY_MS = Number(process.env.BM2Q_RECAP_DELAY_MS ?? 4000);
+function delayFromEnv(name: string, fallbackMs: number): number {
+  const value = Number(process.env[name]);
+  return process.env[name] && Number.isFinite(value) && value > 0 ? value : fallbackMs;
+}
+const READY_DELAY_MS = delayFromEnv("BM2Q_READY_DELAY_MS", 1500);
+const RECAP_DELAY_MS = delayFromEnv("BM2Q_RECAP_DELAY_MS", 4000);
 
-// How long a player who lost their connection mid-game keeps their seat
-// (and the host role). Read at use time so tests can shorten it.
+// How long a player who lost their connection mid-game keeps their seat.
+// Read at use time so tests can shorten it.
 const DEFAULT_RECONNECT_SECONDS = 180;
 function reconnectSeconds(): number {
   const value = Number(process.env.BM2Q_RECONNECT_SECONDS);
@@ -164,9 +170,6 @@ export class BM2QRoom extends Room<GameStateSchema> {
       this.state.maxRounds = maxRounds;
     }
 
-    // Set room metadata for lookup by code
-    this.setMetadata({ roomCode: this.state.roomCode });
-
     log.info(`Room created code=${this.state.roomCode} maxRounds=${this.state.maxRounds}`);
     this.registerMessageHandlers();
   }
@@ -235,6 +238,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
     this.handle("rematch", (client) => {
       if (this.state.phase !== "gameover") return;
       if (client.sessionId !== this.state.hostId) return;
+      if (this.activePlayerCount() < 2) return;
 
       // Reset all player state
       this.state.players.forEach((player, id) => {
@@ -387,6 +391,8 @@ export class BM2QRoom extends Room<GameStateSchema> {
 
         const targetPlayer = this.state.players.get(targetId);
         if (!targetPlayer) return;
+        // Only answers actually submitted this round can receive votes.
+        if (this.getSelected(targetId).length !== this.state.currentQuestion.pick) return;
 
         this.roundVotes.set(client.sessionId, targetId);
         player.hasVoted = true;
@@ -467,9 +473,11 @@ export class BM2QRoom extends Room<GameStateSchema> {
       return;
     }
 
-    // A consented leave is final; otherwise the seat (and host role) is kept
-    // for the reconnection window.
+    // A consented leave is final; otherwise the seat is kept for the
+    // reconnection window. Either way the host role moves on right away, so
+    // the others are never stuck waiting for a host who may not come back.
     if (consented) this.markDeparted(id);
+    else if (id === this.state.hostId) this.reassignHost();
 
     // Notify clients of the disconnection and unblock the phase if all
     // remaining connected players have already acted.
@@ -481,14 +489,20 @@ export class BM2QRoom extends Room<GameStateSchema> {
     try {
       await this.allowReconnection(client, reconnectSeconds());
       player.connected = true;
-      // The host left for good while nobody else was connected: take over.
-      if (this.departedIds.has(this.state.hostId)) this.state.hostId = id;
+      // Nobody was left to take the host role: the first one back takes it.
+      const host = this.state.players.get(this.state.hostId);
+      if (!host?.connected || this.departedIds.has(this.state.hostId)) {
+        this.state.hostId = id;
+      }
       log.info(`Player reconnected name="${player.name}" id=${id}`);
       this.broadcastSync();
+      // Phases pause while nobody is connected; resume if everyone had acted.
+      this.checkPhaseAdvance();
     } catch {
       log.warn(`Reconnection timed out for name="${player.name}" id=${id}`);
       this.markDeparted(id);
       this.broadcastSync();
+      this.checkPhaseAdvance();
     }
   }
 
@@ -861,6 +875,15 @@ export class BM2QRoom extends Room<GameStateSchema> {
 
     this.state.winnerId = winnerId;
     this.broadcastSync();
+  }
+
+  /** Connected players who have not left for good. */
+  private activePlayerCount(): number {
+    let count = 0;
+    this.state.players.forEach((player, id) => {
+      if (player.connected && !this.departedIds.has(id)) count += 1;
+    });
+    return count;
   }
 
   private checkPhaseAdvance() {
