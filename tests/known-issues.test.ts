@@ -1,5 +1,5 @@
 // Problems found during the October 2026 review. Each test describes the
-// expected behaviour; tests marked `todo` still fail and are fixed later.
+// expected behaviour and guards against the bug coming back.
 // The deck-exhaustion test was a suspicion that did not reproduce; it stays
 // as a guard.
 import { describe, it, before, after } from "node:test";
@@ -23,7 +23,7 @@ describe("known issues", () => {
     await server.stop();
   });
 
-  it("a double click on 'start' starts only one round", { todo: "start-game is not limited to the lobby" }, async () => {
+  it("a double click on 'start' starts only one round", async () => {
     const bots = await setupGame(server.url, 2);
     bots[0].room.send("start-game");
     bots[0].room.send("start-game");
@@ -33,7 +33,7 @@ describe("known issues", () => {
     await closeAll(bots);
   });
 
-  it("'start' sent during a game is ignored", { todo: "start-game is not limited to the lobby" }, async () => {
+  it("'start' sent during a game is ignored", async () => {
     const bots = await setupGame(server.url, 2);
     bots[0].room.send("start-game");
     await bots[0].waitForPhase("play");
@@ -44,7 +44,7 @@ describe("known issues", () => {
     await closeAll(bots);
   });
 
-  it("player names are capped at 20 characters", { todo: "names are not validated" }, async () => {
+  it("player names are capped at 20 characters", async () => {
     const host = await createGame(server.url, "x".repeat(100_000));
     assert.ok(host.me.name.length <= 20, `name length ${host.me.name.length}`);
     await closeAll([host]);
@@ -56,7 +56,7 @@ describe("known issues", () => {
     await closeAll([host]);
   });
 
-  it("when the host leaves mid-game, another player becomes host and can rematch", { todo: "host is only reassigned in the lobby" }, async () => {
+  it("when the host leaves mid-game, another player becomes host and can rematch", async () => {
     const bots = await setupGame(server.url, 3, { maxRounds: 5 });
     const [host, p2, p3] = bots;
     host.room.send("start-game");
@@ -71,7 +71,7 @@ describe("known issues", () => {
     await closeAll([p2, p3]);
   });
 
-  it("a player who already validated stays validated when the round opens early", { todo: "the delayed 'ready -> play' transition fires a second time" }, async () => {
+  it("a player who already validated stays validated when the round opens early", async () => {
     const bots = await setupGame(server.url, 3);
     const [a, b] = bots;
     a.room.send("start-game");
