@@ -54,6 +54,7 @@ export default function LandingPage() {
         <input
           type="text"
           placeholder="Ton nom ici..."
+          maxLength={20}
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleEnter()}
