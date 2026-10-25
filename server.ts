@@ -2,7 +2,7 @@ import { createServer } from "http";
 import next from "next";
 import { Server } from "colyseus";
 import { WebSocketTransport } from "@colyseus/ws-transport";
-import { BM2QRoom } from "./src/server/rooms/bm2q-room";
+import { registerRooms } from "./src/server/game-server";
 
 const dev = process.env.NODE_ENV !== "production";
 const port = parseInt(process.env.PORT || "3000", 10);
@@ -22,7 +22,7 @@ app.prepare().then(() => {
   });
 
   const gameServer = new Server({ transport });
-  gameServer.define("bm2q", BM2QRoom);
+  registerRooms(gameServer);
 
   // Replace the auto-registered upgrade handlers with our own
   // so Next.js HMR WebSockets don't hit Colyseus

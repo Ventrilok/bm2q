@@ -1,4 +1,4 @@
-import { Room, Client } from "colyseus";
+import { Room, Client, ServerError } from "colyseus";
 import { randomBytes } from "crypto";
 import {
   GameStateSchema,
@@ -55,14 +55,28 @@ function shuffleArray<T>(array: T[], tsSeed = 0): T[] {
   return shuffled;
 }
 
+// Codes of rooms currently alive in this process. The room code doubles as the
+// room id, so players join by code without the server listing every room.
+const activeRoomCodes = new Set<string>();
+const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+
 function generateRoomCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-  let code = "";
-  for (let i = 0; i < 4; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+  for (let attempt = 0; attempt < 1000; attempt++) {
+    let code = "";
+    for (let i = 0; i < 4; i++) {
+      code += ROOM_CODE_CHARS[randomBytes(1)[0] % ROOM_CODE_CHARS.length];
+    }
+    if (!activeRoomCodes.has(code)) return code;
   }
-  return code;
+  throw new ServerError(503, "NO_ROOM_CODE_AVAILABLE");
 }
+
+// Phase delays, overridable so tests can run games quickly.
+const READY_DELAY_MS = Number(process.env.BM2Q_READY_DELAY_MS ?? 1500);
+const RECAP_DELAY_MS = Number(process.env.BM2Q_RECAP_DELAY_MS ?? 4000);
+
+// Error messages sent to clients when joining is refused.
+export const JOIN_ERROR_GAME_STARTED = "GAME_STARTED";
 
 export class BM2QRoom extends Room<GameStateSchema> {
   private questionDeck: Question[] = [];
@@ -85,10 +99,15 @@ export class BM2QRoom extends Room<GameStateSchema> {
     return this.playerSelected.get(id) ?? [];
   }
 
-  onCreate(options: { roomCode?: string; maxRounds?: number }) {
+  onCreate(options: { maxRounds?: number }) {
     this.setState(new GameStateSchema());
-    this.state.roomCode = options.roomCode || generateRoomCode();
+    const code = generateRoomCode();
+    activeRoomCodes.add(code);
+    this.roomId = code;
+    this.state.roomCode = code;
     this.state.phase = "lobby";
+    // Hidden from public room listings: joining requires knowing the code.
+    this.setPrivate(true);
 
     // Store the max rounds (validated to allowed values)
     const allowedRounds = [5, 10, 15, 20];
@@ -295,6 +314,19 @@ export class BM2QRoom extends Room<GameStateSchema> {
     });
   }
 
+  // Runs for new players only; returning players (reconnection) skip it.
+  onAuth() {
+    if (this.state.phase !== "lobby") {
+      throw new ServerError(403, JOIN_ERROR_GAME_STARTED);
+    }
+    return true;
+  }
+
+  onDispose() {
+    activeRoomCodes.delete(this.roomId);
+    log.info(`Room disposed code=${this.roomId}`);
+  }
+
   onJoin(client: Client, options: { playerName?: string }) {
     const player = new PlayerSchema();
     player.id = client.sessionId;
@@ -496,7 +528,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
     // Auto-advance to play after a short delay (let clients see the question)
     this.clock.setTimeout(() => {
       this.transitionToPlay();
-    }, 1500);
+    }, READY_DELAY_MS);
   }
 
   private serializePlayer(playerId: string, player: PlayerSchema, forClientId?: string) {
@@ -654,7 +686,7 @@ export class BM2QRoom extends Room<GameStateSchema> {
       } else {
         this.transitionToReady();
       }
-    }, 4000);
+    }, RECAP_DELAY_MS);
   }
 
   private transitionToGameover() {
